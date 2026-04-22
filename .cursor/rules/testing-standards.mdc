@@ -1,0 +1,26 @@
+---
+description: Testing standards for unit, integration, and acceptance checks
+globs: **/*.{test,spec}.{ts,tsx,js,jsx}
+alwaysApply: false
+---
+
+# Testing Standards
+
+- Map tests to requirement IDs where possible (FR/NFR/UAT references in test names or comments).
+- Prefer deterministic tests: avoid timing flakiness and uncontrolled network dependencies.
+- Keep unit tests fast and isolated; mock IO boundaries only.
+- Use integration tests for cross-module flows (onboarding, score sync, family join, SOS retry).
+- Cover offline and degraded-network scenarios for critical user journeys.
+
+# Quality Gates
+
+- Add tests for bug fixes to prevent regressions.
+- Verify edge cases and fallback behavior, not only happy paths.
+- For new features, include at least:
+  - one unit test for core logic
+  - one integration-style behavior check
+
+# Naming and Readability
+
+- Use clear test names: `given_when_then` or behavior-first style.
+- Keep arrange/act/assert structure obvious.

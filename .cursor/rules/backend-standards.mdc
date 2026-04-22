@@ -1,0 +1,26 @@
+---
+description: Backend and API service standards for reliability and safety
+globs: backend/**/*.{ts,js,py,sql}
+alwaysApply: false
+---
+
+# Backend Standards
+
+- Keep API handlers thin; place domain logic in services/use-cases.
+- Validate all inputs at boundaries and return structured errors.
+- Use explicit auth and authorization checks on protected endpoints.
+- Treat external integrations (SMS, push, auth) as failure-prone and retry-safe.
+- Implement idempotency for operations that can be retried.
+
+# Data and Contracts
+
+- Version database schema changes with clear migration notes.
+- Keep API contracts explicit (request/response/error format).
+- Do not break existing fields without a migration/deprecation path.
+- Enforce limits from PRD (e.g., family member capacity) server-side.
+
+# Security and Operations
+
+- Never hardcode secrets; use environment variables and secure storage.
+- Log with correlation IDs for debugging critical flows (SOS, sync, auth).
+- Do not log PII in plain text; mask phone numbers and sensitive identifiers.

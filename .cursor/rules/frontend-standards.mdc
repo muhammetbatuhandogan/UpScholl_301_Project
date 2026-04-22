@@ -1,0 +1,25 @@
+---
+description: Frontend coding standards for mobile app layers
+globs: frontend/**/*.{ts,tsx,js,jsx}
+alwaysApply: false
+---
+
+# Frontend Standards
+
+- Use feature-based foldering and keep screens thin; move business logic to hooks/services.
+- Keep components focused: one responsibility, typed props, and predictable rendering.
+- Prefer local-first UX: read from local state/DB first, then sync in background.
+- Avoid inline complex logic in JSX; extract helpers for readability and testing.
+- Handle loading, empty, and error states explicitly on every user-facing screen.
+
+# State and Data
+
+- Use centralized stores only for shared state; keep ephemeral UI state local.
+- Do not mutate state directly; use immutable updates.
+- Use stable keys and memoization for long lists and score/task cards.
+- Protect sensitive user data in client logs; never log full phone numbers or tokens.
+
+# Accessibility and UX
+
+- Keep touch targets and contrast mobile-friendly by default.
+- Ensure critical flows (SOS, guide access) remain discoverable in 1-2 taps.

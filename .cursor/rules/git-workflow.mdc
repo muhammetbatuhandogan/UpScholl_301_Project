@@ -1,0 +1,25 @@
+---
+description: Git workflow and commit hygiene standards
+globs: **/*
+alwaysApply: false
+---
+
+# Git Workflow
+
+- Work in small, reviewable increments; avoid giant mixed-purpose changes.
+- Keep one logical change per commit.
+- Write commit messages that explain intent and impact, not only file edits.
+- Do not commit secrets, tokens, or environment files with sensitive values.
+- Before finalizing changes, check for accidental debug code and noisy logs.
+
+# Branch and PR Hygiene
+
+- Use descriptive branch names tied to feature/fix intent.
+- Keep pull requests focused to one main outcome.
+- Include a short test plan for each PR (what was verified and how).
+- Call out risks, migrations, or data-impacting changes explicitly.
+
+# Safety
+
+- Avoid destructive git actions unless explicitly requested by project owner.
+- Preserve unrelated local changes; do not revert work outside current scope.

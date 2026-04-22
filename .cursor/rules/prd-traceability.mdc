@@ -1,0 +1,22 @@
+---
+description: Keep PRD changes traceable with FR/NFR and tests
+globs: PRD/*.md
+alwaysApply: false
+---
+
+# PRD Traceability Rule
+
+- Every new or edited requirement must keep an ID format (`FR-*`, `NFR-*`, `TC*`, or `UAT-*`).
+- Keep requirement text testable: one behavior per bullet, clear trigger and expected outcome.
+- For each major feature update, ensure consistency across:
+  - feature requirements
+  - edge-case handling
+  - security/KVKK constraints
+  - test acceptance criteria
+- Do not change numeric constraints (timing, limits, capacities) without explicit reason.
+- Mark assumptions clearly if implementation details are still unknown.
+
+# Domain Constraints
+
+- Maintain offline-first behavior for critical flows.
+- Preserve privacy-by-default: minimal location usage, protected personal data, no unnecessary PII logging.

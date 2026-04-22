@@ -1,0 +1,210 @@
+---
+description: 
+globs: designsystem
+alwaysApply: false
+---
+
+---
+description: Design system and UI rules for building modern SaaS dashboards
+globs: ["**/*.tsx", "**/*.jsx", "**/*.ts", "**/*.js", "**/*.css"]
+alwaysApply: true
+---
+
+# Design System Rules
+
+You are building a modern SaaS dashboard / web application. Every UI decision must follow the rules below. This design language is inspired by products like Master Key, Contra, and modern fitness/booking dashboards: clean, airy, data-rich but not overwhelming, with soft surfaces and purposeful color.
+
+## 1. Core Design Principles
+
+1. **Whitespace over density.** Always prefer breathing room. If in doubt, add more padding, not less. Minimum card padding is `p-6`; page gutters are `px-8` or more.
+2. **Soft, not sharp.** Never use hard shadows, harsh borders, or pure black. Everything is rounded, soft-shadowed, and slightly desaturated.
+3. **Card-based composition.** The page is a collection of self-contained cards. Each metric, section, or group of related info lives in its own card. Cards never bleed into each other.
+4. **One highlight per screen.** At most one card or element gets a strong color treatment (solid blue fill, gradient, etc.). Everything else is neutral. This creates visual hierarchy without noise.
+5. **Data deserves design.** Numbers are the hero of a dashboard. Primary metrics should be large (text-3xl minimum), bold, and paired with a small supporting label and a trend indicator.
+
+## 2. Color System
+
+Use this exact palette. Do not invent new shades.
+
+### Neutrals (the workhorse — 85% of the UI)
+- Background: `#F8F9FB` (very light cool gray) or pure `#FFFFFF`
+- Card surface: `#FFFFFF`
+- Subtle surface / hover: `#F3F4F6`
+- Border: `#E5E7EB` (use sparingly, prefer shadow over border)
+- Text primary: `#111827`
+- Text secondary: `#6B7280`
+- Text tertiary / meta: `#9CA3AF`
+
+### Primary (accent — use on ~1 hero element)
+- Blue: `#3B82F6` (buttons, selected states, primary highlights)
+- Blue soft: `#DBEAFE` (tinted card backgrounds, like the "Balance" card)
+
+### Supporting accents (use for badges, categories, chart segments — never as primary UI)
+- Purple: `#8B5CF6` / soft `#EDE9FE`
+- Pink/Magenta: `#EC4899` / soft `#FCE7F3`
+- Yellow: `#FACC15` / soft `#FEF3C7`
+- Green: `#10B981` / soft `#D1FAE5`
+- Red/Urgent: `#EF4444` / soft `#FEE2E2`
+
+### Status badges (always pill-shaped, uppercase optional)
+- Urgent → red fill, white text OR soft red bg with red text
+- High → pink/magenta soft bg with dark text
+- Normal → green soft bg with green text
+- High Impact → purple soft bg with purple text
+- Medium Impact → gray soft bg with gray text
+
+## 3. Typography
+
+- **Font family**: Use Inter, SF Pro, or a similar geometric sans. Never use Arial or Times.
+- **Headings**: semibold (600) or bold (700), tight tracking (`tracking-tight`).
+- **Dashboard / Page title**: `text-2xl` to `text-3xl`, bold, often uppercase for branding feel (like "DASHBOARD").
+- **Metric numbers**: `text-3xl` to `text-5xl`, bold. This is the visual anchor.
+- **Card titles**: `text-base` to `text-lg`, medium (500) or semibold.
+- **Body**: `text-sm`, regular.
+- **Meta / labels**: `text-xs`, regular, in `text-gray-500`.
+- Numbers and currency always use tabular figures where possible.
+- Include a subtitle under page titles in `text-sm text-gray-500` (e.g., "All the Necessary Data on the Main Screen").
+
+## 4. Spacing & Layout
+
+- Use a consistent 4px spacing scale (Tailwind default).
+- **Card padding**: `p-6` standard, `p-8` for hero cards.
+- **Card gap (between cards)**: `gap-4` to `gap-6`.
+- **Section gap (vertical)**: `space-y-6` or `space-y-8`.
+- **Border radius**:
+  - Cards: `rounded-2xl` (16px) — this is the signature radius
+  - Buttons / inputs: `rounded-xl` (12px)
+  - Pills / badges / avatars: `rounded-full`
+  - Never use `rounded-sm` or `rounded-md` on primary surfaces.
+- **Grid**: dashboards typically use 12-column or 3-4 column grids. Mix column spans so hero cards (like "Balance") span 2 columns while secondary cards span 1.
+
+## 5. Shadows & Elevation
+
+- Cards: `shadow-sm` on rest, `shadow-md` on hover (subtle lift).
+- Floating panels / modals / popovers: `shadow-xl` with a slight vertical offset.
+- Never use `shadow-2xl` or inner shadows.
+- Prefer shadow + no border. If you need a border, use `border border-gray-100`, never darker.
+
+## 6. Components
+
+### Sidebar Navigation
+- Fixed left sidebar, ~240px wide, white background, subtle right divider OR no divider at all.
+- Logo/workspace selector at top.
+- Menu items: icon + label, `px-3 py-2`, `rounded-lg`.
+- Active state: subtle gray background `bg-gray-100` OR soft colored pill. No hard bars or underlines.
+- Section labels (e.g., "IDENTITY", "LEADS") in `text-xs uppercase tracking-wide text-gray-400`.
+- Badges on menu items (e.g., notification count, "BETA" tag) should be tiny pills.
+
+### Top Nav / Header
+- White background, search input centered or right-aligned, notification bell + avatar far right.
+- Search is a pill-shaped input (`rounded-full`) with a search icon prefix, soft gray background, no border.
+- Avatars are always circular with a subtle ring.
+
+### Metric Cards (the hero pattern)
+Structure:
+1. Small label on top (e.g., "Balance", "This Month's Earnings")
+2. Huge number (text-3xl+ bold)
+3. Trend indicator: up/down arrow icon + percentage + "vs last month" in gray
+4. Optional: circular progress ring on the right side showing a percentage
+
+Variants:
+- **Primary metric card**: soft colored background (like `bg-blue-100`), dark text
+- **Secondary metric cards**: white background, subtle shadow
+
+### Charts
+- **Line charts**: single smooth curve, 2px stroke, blue `#3B82F6`. No fill, or a very subtle gradient fill. Small circular markers only on hover. X-axis labels are abbreviated months ("JAN", "FEB"). Y-axis is minimal — light gray grid lines, no axis line. Include a floating tooltip pill on hover with the exact value.
+- **Bar charts**: thin bars (4-6px wide), gray by default, accent color for active/hovered bar. Rounded top corners.
+- **Donut / progress rings**: 2-tone (filled + track), percentage number centered inside. Stroke width ~8-10px, rounded line caps.
+
+### Tables / Lists
+- No visible row borders. Use row hover `hover:bg-gray-50` instead.
+- Row height generous (`py-3` min).
+- Include avatar + name combos where relevant.
+- Right-align numeric columns.
+- Status badges right-aligned in their own column.
+
+### Avatars & Avatar Stacks
+- Circular, with a 2px white ring when stacked.
+- Overlapping stacks use negative margin (`-ml-2`).
+- Show "+N" pill at the end if more users exist than shown avatars.
+
+### Buttons
+- **Primary**: solid blue `bg-blue-500`, white text, `rounded-xl`, `px-5 py-2.5`, medium weight, subtle shadow.
+- **Secondary**: white bg, gray border `border-gray-200`, dark text, same shape.
+- **Tertiary/Ghost**: no bg, gray text, hover bg `bg-gray-100`.
+- Icon buttons: square, `rounded-lg`, icon centered, gray-on-white.
+- Never use gradient buttons unless specifically asked.
+
+### Inputs & Selects
+- Background `bg-gray-50` or white, border `border-gray-200`, `rounded-xl`, `px-4 py-2.5`.
+- Focus state: blue ring, no harsh outline.
+- Labels always above the input in `text-sm text-gray-700 font-medium`.
+
+### Modals / Floating Panels
+- White card, `rounded-2xl`, `shadow-xl`, `p-6`.
+- Header row: title + close (×) / edit / delete icon buttons inline on the right.
+- Fields stacked vertically with `space-y-4`.
+- Primary action button full-width at the bottom.
+
+### Badges / Tags
+- Always `rounded-full`, `px-2.5 py-0.5`, `text-xs font-medium`.
+- Soft colored background + matching darker text (e.g., `bg-purple-100 text-purple-700`).
+- Never use solid saturated colors for informational tags — save those for urgent/critical only.
+
+### Progress Bars
+- Track: `bg-gray-100`, thin (4-6px), `rounded-full`.
+- Fill: accent color, also `rounded-full`.
+- Optional label pair above: current value left, target right.
+
+## 7. Iconography
+
+- Use **Lucide React** (`lucide-react`) as the default icon library. Do not mix icon sets.
+- Standard size: 16px (`size-4`) for inline, 20px (`size-5`) for nav and buttons, 24px for large UI moments.
+- Stroke width 2, gray `text-gray-500` by default, inherits color when contextual.
+- Icons always paired with labels in nav; icon-only only in dense toolbars with tooltips.
+
+## 8. Motion & Interaction
+
+- Transitions are short and subtle: `transition-all duration-200 ease-out`.
+- Hover lifts: cards `hover:shadow-md hover:-translate-y-0.5`.
+- Never use bouncy or dramatic animations in a dashboard context.
+- Loading states: skeleton placeholders (gray pulsing rectangles with the same radius as the real element), not spinners.
+
+## 9. Empty States
+
+- Large but friendly. Include an icon or illustration, a one-line headline, a supporting sentence, and a primary action button.
+- Centered in the card, with generous vertical padding (`py-12`).
+
+## 10. Things to Avoid
+
+- ❌ Dark mode by default (build light-first; dark mode is a separate concern)
+- ❌ Gradients on buttons, backgrounds, or borders
+- ❌ Drop shadows with high opacity or large blur radius
+- ❌ Mixed border radii within a single component
+- ❌ More than 2 typefaces
+- ❌ Emoji as UI icons (use Lucide)
+- ❌ Centered body text in cards (always left-aligned)
+- ❌ All-caps text except for tiny section labels or intentional branding
+- ❌ Using red/urgent colors for non-critical information
+- ❌ Decorative illustrations unless the section is a true empty/onboarding state
+
+## 11. Component Library & Stack Defaults
+
+When generating UI code:
+- Use **React + TypeScript**.
+- Use **Tailwind CSS** for all styling — no CSS modules, no styled-components.
+- Use **shadcn/ui** component primitives when available.
+- Use **lucide-react** for icons.
+- Use **recharts** for charts (line, bar, donut).
+- Always make components **responsive**: sidebar collapses to icon-only or drawer on `md:` breakpoint and below; grids collapse from 3-4 cols to 1-2 cols.
+- Always write **accessible** markup: semantic HTML, `aria-label` on icon buttons, focus-visible rings on interactive elements.
+
+## 12. The Vibe Check
+
+Before shipping any UI, ask yourself:
+- Does it feel calm? (not cluttered)
+- Is there a clear visual hierarchy? (one hero, then supporting elements)
+- Would it look at home next to Linear, Notion, or Vercel's dashboard? If not, simplify.
+- Are the numbers the heroes, not the chrome?
+
+If the answer to any of these is "no," reduce elements, increase whitespace, and soften colors until it passes.

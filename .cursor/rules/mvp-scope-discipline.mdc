@@ -1,0 +1,19 @@
+---
+description: Keep MVP decisions strict and v1-focused
+globs: MVP/*.md
+alwaysApply: false
+---
+
+# MVP Scope Discipline
+
+- Preserve the core promise: proactive earthquake preparedness before disaster time.
+- Keep v1 focused on score engine, weekly tasks, emergency bag, family mode, offline guide, SOS, and notifications.
+- Explicitly defer out-of-scope items (e.g., early warning, building analysis, DASK integration, web app, AI chatbot).
+- When proposing features, label each item as `MVP` or `v2+`.
+- Avoid adding dependencies or integrations not justified by current MVP success metrics.
+
+# Writing Guidance
+
+- Use concise decisions with rationale and trade-offs.
+- Prefer measurable language (targets, limits, timing) over vague statements.
+- When a scope change is suggested, include impact on timeline and complexity.

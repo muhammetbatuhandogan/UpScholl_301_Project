@@ -1,0 +1,26 @@
+---
+description: Generate execution-ready plan.md from MVP and PRD
+globs: plan.md
+alwaysApply: false
+---
+
+# plan.md Standards
+
+- Build the plan from current MVP + PRD only; no speculative features.
+- Structure sections in this order:
+  1. Goal and scope
+  2. Assumptions and constraints
+  3. Milestones (timeboxed)
+  4. Sprint backlog by priority
+  5. Dependencies and risks
+  6. Definition of done
+  7. Metrics and validation checkpoints
+- Convert requirements into actionable tasks with clear outputs.
+- Prefer vertical slices (end-to-end usable pieces) over isolated technical tasks.
+- Include explicit verification for each milestone (unit, integration, and UAT signals).
+
+# Prioritization Policy
+
+- Prioritize safety-critical and retention-driving capabilities first.
+- Keep tasks small enough to complete in one focused session when possible.
+- Flag blocked items with required decision/input owner.
