@@ -32,6 +32,41 @@ npm run dev --workspace backend
 npm run dev --workspace frontend
 ```
 
+## My Working Flow (Windows / Python 3.11)
+
+This is the exact flow that successfully worked on this project:
+
+1) Open Terminal 1 at project root and activate venv:
+
+```bash
+.venv\Scripts\activate
+```
+
+2) Start backend:
+
+```bash
+npm run dev --workspace backend
+```
+
+Expected backend log:
+- `Uvicorn running on http://0.0.0.0:4010`
+
+3) Open Terminal 2 at project root and start frontend on fixed port:
+
+```bash
+npm run dev --workspace frontend -- --host --port 5173
+```
+
+Expected frontend log:
+- `Local: http://localhost:5173/`
+
+4) Open app and verify:
+- Frontend: `http://localhost:5173/`
+- Backend health: `http://localhost:4010/health`
+- Login with:
+  - Username: `demo`
+  - Password: `demo123`
+
 ## Local Links
 
 - Frontend app: [http://localhost:5173/](http://localhost:5173/)
