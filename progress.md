@@ -78,3 +78,20 @@
   - frontend starts
   - auth works
   - protected CRUD works
+
+## v3 - 5 Mayıs 2026
+
+### Frontend modules (MVP slice)
+- **Onboarding:** three-step flow (region, household, score summary) with `localStorage` persistence.
+- **Emergency Bag:** categorized checklist with progress bar and persisted check state.
+- **Family:** up to five members, roles, scores, average family score, persisted locally.
+- **Emergency:** guide tabs (during / after / 72h / trapped), up to three SOS contacts, simulate SOS timestamp, persisted locally.
+- **Dashboard:** unchanged stack (demo login, protected task CRUD, summary, backend pill).
+
+### Cleanup and documentation
+- Removed unused `renderPlaceholderRoute` from `frontend/src/main.js`.
+- Top bar copy updated to reflect implemented modules (no “placeholder” wording).
+- README reviewer checklist extended to cover module tabs for a quick UI pass.
+
+### Next focus
+- Deeper refactors (split `main.js` into route modules) only if the team wants a larger structural change; backend persistence and product scope per `planv2.md` remain next milestones.

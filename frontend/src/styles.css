@@ -42,6 +42,35 @@ h1 {
   color: var(--color-text-secondary);
 }
 
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab-link {
+  text-decoration: none;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tab-link:hover {
+  color: var(--color-primary);
+  border-color: rgba(37, 99, 235, 0.4);
+}
+
+.tab-link-active {
+  color: white;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
 .pill {
   padding: 8px 12px;
   border-radius: 999px;
@@ -81,6 +110,87 @@ h1 {
 .card h2 {
   margin: 0 0 12px;
   font-size: 20px;
+}
+
+.score-box {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.score-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--color-primary);
+  margin-top: 4px;
+}
+
+.progress-wrap {
+  margin-top: 10px;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.progress-track {
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #16a34a);
+  transition: width 180ms ease;
+}
+
+.bag-category h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.bag-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.bag-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--color-surface);
+}
+
+.family-score-label {
+  margin-left: 8px;
+}
+
+.guide-tab {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border-radius: 999px;
+  padding: 8px 10px;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.guide-tab-active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
 }
 
 .form {
@@ -241,6 +351,11 @@ select:focus {
   .topbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    white-space: nowrap;
   }
 
   .task-item {

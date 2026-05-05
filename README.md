@@ -89,5 +89,6 @@ If someone opens this repository and wants to verify that the project is running
    - backend health works (`/health`)
    - login succeeds
    - task CRUD works after login
+5. Optional UI pass (no backend required): open **Onboarding**, **Bag**, **Family**, and **Emergency** tabs and confirm forms/lists render and persist after a refresh (`localStorage`).
 
-This confirms the project reached a working first-level full-stack state.
+This confirms the project reached a working first-level full-stack state with the current MVP-style modules.
