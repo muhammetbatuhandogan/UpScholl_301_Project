@@ -1,0 +1,26 @@
+# Local PostgreSQL for development (Docker Desktop).
+# Start: docker compose up -d
+# Stop:  docker compose down
+# Data persists in the named volume until you run: docker compose down -v
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: upscholl_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-upscholl}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-upscholl_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-upscholl}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - upscholl_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-upscholl} -d ${POSTGRES_DB:-upscholl}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  upscholl_pgdata:

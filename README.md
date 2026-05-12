@@ -3,6 +3,31 @@
 Minimal full-stack bootstrap for local development:
 - `frontend`: Vite app
 - `backend`: FastAPI (Python)
+- `docker-compose.yml`: PostgreSQL 16 (local dev only; default credentials in compose)
+
+## PostgreSQL (Docker)
+
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) running.
+
+1) From the **project root**:
+
+```bash
+docker compose up -d
+```
+
+2) Wait until the container is healthy (Docker Desktop → Containers → `upscholl_postgres`, or `docker compose ps`).
+
+3) Default connection (override with a root `.env` copied from `.env.example`):
+
+- Host: `localhost`
+- Port: `5432` (change `POSTGRES_PORT` in `.env` if this port is already used on your machine)
+- Database: `upscholl`
+- User: `upscholl`
+- Password: `upscholl_dev`
+
+Stop without deleting data: `docker compose stop`.  
+Remove container but keep volume: `docker compose down`.  
+**Wipe database volume:** `docker compose down -v`.
 
 ## Run Locally
 
