@@ -59,6 +59,8 @@ This runs Alembic (`backend/alembic`) and creates tables plus the demo user and 
 npm run dev --workspace backend
 ```
 
+On Windows, `backend` scripts call **`..\\.venv\\Scripts\\python.exe`** so you do not rely on `PATH` or having activated the venv in that same shell (avoids picking up a different system `python`).
+
 5) Start frontend (Terminal 2):
 
 ```bash
@@ -69,11 +71,9 @@ npm run dev --workspace frontend
 
 This is the exact flow that successfully worked on this project:
 
-1) Open Terminal 1 at project root and activate venv:
+> **macOS / Linux:** `backend/package.json` points at `..\\.venv\\Scripts\\python.exe` (Windows). Use `../.venv/bin/python3` in those scripts, or run uvicorn manually from `backend` with your venv Python.
 
-```bash
-.venv\Scripts\activate
-```
+1) Open Terminal 1 at project root (venv activation is **optional** for `npm run dev --workspace backend` on Windows; scripts use `.venv` explicitly).
 
 2) Ensure Postgres is running (`docker compose up -d` from repo root if needed).
 
