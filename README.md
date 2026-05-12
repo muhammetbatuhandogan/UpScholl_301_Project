@@ -119,6 +119,23 @@ Expected frontend log:
 - Username: `demo`
 - Password: `demo123`
 
+## Backend API (current web stack)
+
+After `npm run db:upgrade --workspace backend`, OpenAPI docs: [http://localhost:4010/docs](http://localhost:4010/docs)
+
+| Method | Path | Auth | Notes |
+|--------|------|------|--------|
+| GET | `/health` | No | Includes `database` connectivity |
+| GET | `/api/status` | No | |
+| POST | `/api/auth/login` | No | Demo user + bcrypt |
+| POST | `/api/auth/logout` | Bearer | Revokes current access token |
+| GET | `/api/auth/me` | Bearer | |
+| GET/POST/PUT/DELETE | `/api/tasks` | Bearer | Per-user tasks |
+| POST | `/api/analytics/events` | Optional Bearer | Funnel events; `user_id` set when token valid |
+| GET/PUT | `/api/onboarding` | Bearer | Server-side onboarding snapshot |
+
+**Planv2 not yet in this repo (backend):** real OTP/SMS, JWT refresh, Netgsm SOS, push notification dispatch, family invite APIs — track under product backlog.
+
 ## Reviewer Quick Check
 
 If someone opens this repository and wants to verify that the project is running end-to-end:
@@ -126,12 +143,12 @@ If someone opens this repository and wants to verify that the project is running
 1. `docker compose up -d` (repo root) and wait until Postgres is healthy.
 2. `pip install -r backend/requirements.txt`, then `npm run db:upgrade --workspace backend`.
 3. Start backend and frontend with the commands above.
-2. Open frontend URL from terminal output (Vite may auto-switch to `5174`/`5175` if `5173` is busy).
-3. Login with demo credentials.
-4. Confirm:
+4. Open frontend URL from terminal output (Vite may auto-switch to `5174`/`5175` if `5173` is busy).
+5. Login with demo credentials.
+6. Confirm:
    - `/health` shows `"database": "connected"` when Postgres is reachable
    - login succeeds
    - task CRUD works after login
-5. Optional UI pass (no backend required): open **Onboarding**, **Bag**, **Family**, and **Emergency** tabs and confirm forms/lists render and persist after a refresh (`localStorage`).
+7. Optional UI pass (no backend required): open **Onboarding**, **Bag**, **Family**, and **Emergency** tabs and confirm forms/lists render and persist after a refresh (`localStorage`).
 
 This confirms the project reached a working first-level full-stack state with the current MVP-style modules.

@@ -38,3 +38,12 @@ def get_user_from_token(db: Session, access_token: str) -> Optional[UserProfile]
     if user is None:
         return None
     return UserProfile.model_validate(user)
+
+
+def revoke_token(db: Session, access_token: str) -> bool:
+    row = db.scalar(select(AccessToken).where(AccessToken.token == access_token))
+    if row is None:
+        return False
+    db.delete(row)
+    db.commit()
+    return True
