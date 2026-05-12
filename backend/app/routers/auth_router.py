@@ -1,24 +1,29 @@
 from fastapi import APIRouter, Depends, Header, HTTPException
+from sqlalchemy.orm import Session
 
+from app.db.session import get_db
 from app.schemas.auth_schema import LoginInput, LoginResponse, UserProfile
 from app.services.auth_service import authenticate_user, get_user_from_token
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-def get_current_user(authorization: str = Header(default="")) -> UserProfile:
+def get_current_user(
+    db: Session = Depends(get_db),
+    authorization: str = Header(default=""),
+) -> UserProfile:
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token.")
     access_token = authorization.replace("Bearer ", "", 1).strip()
-    user = get_user_from_token(access_token)
+    user = get_user_from_token(db, access_token)
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid or expired token.")
     return user
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(payload: LoginInput) -> LoginResponse:
-    login_response = authenticate_user(payload)
+async def login(payload: LoginInput, db: Session = Depends(get_db)) -> LoginResponse:
+    login_response = authenticate_user(db, payload)
     if login_response is None:
         raise HTTPException(status_code=401, detail="Invalid username or password.")
     return login_response

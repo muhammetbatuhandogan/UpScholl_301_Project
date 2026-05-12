@@ -1,9 +1,12 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
+from app.db.session import get_db
 from app.routers.auth_router import router as auth_router
 from app.routers.tasks_router import router as tasks_router
 
@@ -28,19 +31,32 @@ app.include_router(tasks_router)
 
 
 @app.get("/health")
-async def health() -> dict:
+async def health(db: Session = Depends(get_db)) -> dict:
+    database_ok = False
+    try:
+        db.execute(text("SELECT 1"))
+        database_ok = True
+    except Exception:
+        database_ok = False
     return {
         "ok": True,
         "service": "backend",
-        "uptime_seconds": 0,
+        "database": "connected" if database_ok else "unavailable",
     }
 
 
 @app.get("/api/status")
-async def status() -> dict[str, str]:
+async def status(db: Session = Depends(get_db)) -> dict:
+    database_ok = False
+    try:
+        db.execute(text("SELECT 1"))
+        database_ok = True
+    except Exception:
+        database_ok = False
     return {
         "app": "UpScholl_301_Project",
         "backend": "running",
+        "database": "connected" if database_ok else "unavailable",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "next_step": "Task CRUD + Auth endpoints",
+        "next_step": "Extend schema via Alembic migrations as features grow",
     }

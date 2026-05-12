@@ -1,30 +1,40 @@
-from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
+import bcrypt
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.db.models import AccessToken, User
 from app.schemas.auth_schema import LoginInput, LoginResponse, UserProfile
 
-_demo_user = UserProfile(
-    id=1,
-    username="demo",
-    created_at=datetime.now(timezone.utc),
-)
 
-_access_tokens: dict = {}
-
-
-def authenticate_user(payload: LoginInput) -> Optional[LoginResponse]:
-    is_valid_demo_username = payload.username.strip() == "demo"
-    is_valid_demo_password = payload.password == "demo123"
-    if not is_valid_demo_username or not is_valid_demo_password:
+def authenticate_user(db: Session, payload: LoginInput) -> Optional[LoginResponse]:
+    username = payload.username.strip()
+    user = db.scalar(select(User).where(User.username == username))
+    if user is None:
+        return None
+    if not bcrypt.checkpw(
+        payload.password.encode("utf-8"),
+        user.password_hash.encode("utf-8"),
+    ):
         return None
 
-    access_token = f"upscholl_{uuid4().hex}"
-    _access_tokens[access_token] = _demo_user
-    return LoginResponse(access_token=access_token, user=_demo_user)
+    token_str = f"upscholl_{uuid4().hex}"
+    db.add(AccessToken(token=token_str, user_id=user.id))
+    db.commit()
+
+    return LoginResponse(
+        access_token=token_str,
+        user=UserProfile.model_validate(user),
+    )
 
 
-def get_user_from_token(access_token: str) -> Optional[UserProfile]:
-    if not access_token:
+def get_user_from_token(db: Session, access_token: str) -> Optional[UserProfile]:
+    row = db.scalar(select(AccessToken).where(AccessToken.token == access_token))
+    if row is None:
         return None
-    return _access_tokens.get(access_token)
+    user = db.get(User, row.user_id)
+    if user is None:
+        return None
+    return UserProfile.model_validate(user)

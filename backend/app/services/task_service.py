@@ -1,66 +1,57 @@
 from datetime import datetime, timezone
 from typing import Optional
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.db.models import Task as TaskORM
 from app.schemas.task_schema import Task, TaskCreateInput, TaskUpdateInput
 
-_task_id_counter = 3
-_tasks: list[Task] = [
-    Task(
-        id=1,
-        title="Prepare emergency bag starter items",
-        status="todo",
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-    ),
-    Task(
-        id=2,
-        title="Set family meeting point",
-        status="in-progress",
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-    ),
-]
+
+def list_tasks(db: Session, user_id: int) -> list[Task]:
+    rows = db.scalars(
+        select(TaskORM)
+        .where(TaskORM.user_id == user_id)
+        .order_by(TaskORM.id.desc())
+    ).all()
+    return [Task.model_validate(row) for row in rows]
 
 
-def list_tasks() -> list[Task]:
-    return _tasks
-
-
-def create_task(payload: TaskCreateInput) -> Task:
-    global _task_id_counter
-    now_utc = datetime.now(timezone.utc)
-    new_task = Task(
-        id=_task_id_counter,
+def create_task(db: Session, user_id: int, payload: TaskCreateInput) -> Task:
+    row = TaskORM(
+        user_id=user_id,
         title=payload.title.strip(),
         status=payload.status,
-        created_at=now_utc,
-        updated_at=now_utc,
     )
-    _task_id_counter += 1
-    _tasks.insert(0, new_task)
-    return new_task
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return Task.model_validate(row)
 
 
-def get_task_by_id(task_id: int) -> Optional[Task]:
-    for task in _tasks:
-        if task.id == task_id:
-            return task
-    return None
-
-
-def update_task(task_id: int, payload: TaskUpdateInput) -> Optional[Task]:
-    task = get_task_by_id(task_id)
-    if task is None:
+def get_task_by_id(db: Session, user_id: int, task_id: int) -> Optional[TaskORM]:
+    row = db.get(TaskORM, task_id)
+    if row is None or row.user_id != user_id:
         return None
-    task.title = payload.title.strip()
-    task.status = payload.status
-    task.updated_at = datetime.now(timezone.utc)
-    return task
+    return row
 
 
-def delete_task(task_id: int) -> bool:
-    for index, task in enumerate(_tasks):
-        if task.id == task_id:
-            _tasks.pop(index)
-            return True
-    return False
+def update_task(db: Session, user_id: int, task_id: int, payload: TaskUpdateInput) -> Optional[Task]:
+    row = get_task_by_id(db, user_id, task_id)
+    if row is None:
+        return None
+    row.title = payload.title.strip()
+    row.status = payload.status
+    row.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(row)
+    return Task.model_validate(row)
+
+
+def delete_task(db: Session, user_id: int, task_id: int) -> bool:
+    row = get_task_by_id(db, user_id, task_id)
+    if row is None:
+        return False
+    db.delete(row)
+    db.commit()
+    return True

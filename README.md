@@ -45,13 +45,21 @@ python -m venv .venv
 pip install -r backend/requirements.txt
 ```
 
-3) Start backend (Terminal 1):
+3) Apply database migrations (same terminal, **after** Postgres is up):
+
+```bash
+npm run db:upgrade --workspace backend
+```
+
+This runs Alembic (`backend/alembic`) and creates tables plus the demo user and sample tasks. New schema changes: add a revision under `backend/alembic/versions/` (you can write raw SQL with `op.execute` or use `op.add_column`, etc.).
+
+4) Start backend (Terminal 1):
 
 ```bash
 npm run dev --workspace backend
 ```
 
-4) Start frontend (Terminal 2):
+5) Start frontend (Terminal 2):
 
 ```bash
 npm run dev --workspace frontend
@@ -67,7 +75,15 @@ This is the exact flow that successfully worked on this project:
 .venv\Scripts\activate
 ```
 
-2) Start backend:
+2) Ensure Postgres is running (`docker compose up -d` from repo root if needed).
+
+3) Apply migrations (once per machine / after pulling new migrations):
+
+```bash
+npm run db:upgrade --workspace backend
+```
+
+4) Start backend:
 
 ```bash
 npm run dev --workspace backend
@@ -76,7 +92,7 @@ npm run dev --workspace backend
 Expected backend log:
 - `Uvicorn running on http://0.0.0.0:4010`
 
-3) Open Terminal 2 at project root and start frontend on fixed port:
+5) Open Terminal 2 at project root and start frontend on fixed port:
 
 ```bash
 npm run dev --workspace frontend -- --host --port 5173
@@ -85,7 +101,7 @@ npm run dev --workspace frontend -- --host --port 5173
 Expected frontend log:
 - `Local: http://localhost:5173/`
 
-4) Open app and verify:
+6) Open app and verify:
 - Frontend: `http://localhost:5173/`
 - Backend health: `http://localhost:4010/health`
 - Login with:
@@ -107,11 +123,13 @@ Expected frontend log:
 
 If someone opens this repository and wants to verify that the project is running end-to-end:
 
-1. Start backend and frontend with the commands above.
+1. `docker compose up -d` (repo root) and wait until Postgres is healthy.
+2. `pip install -r backend/requirements.txt`, then `npm run db:upgrade --workspace backend`.
+3. Start backend and frontend with the commands above.
 2. Open frontend URL from terminal output (Vite may auto-switch to `5174`/`5175` if `5173` is busy).
 3. Login with demo credentials.
 4. Confirm:
-   - backend health works (`/health`)
+   - `/health` shows `"database": "connected"` when Postgres is reachable
    - login succeeds
    - task CRUD works after login
 5. Optional UI pass (no backend required): open **Onboarding**, **Bag**, **Family**, and **Emergency** tabs and confirm forms/lists render and persist after a refresh (`localStorage`).
