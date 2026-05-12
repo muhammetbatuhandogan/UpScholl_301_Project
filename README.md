@@ -127,14 +127,40 @@ After `npm run db:upgrade --workspace backend`, OpenAPI docs: [http://localhost:
 |--------|------|------|--------|
 | GET | `/health` | No | Includes `database` connectivity |
 | GET | `/api/status` | No | |
-| POST | `/api/auth/login` | No | Demo user + bcrypt |
+| POST | `/api/auth/login` | No | Returns `access_token`, `refresh_token`, `expires_in` |
+| POST | `/api/auth/refresh` | No | Body `{ "refresh_token" }`; rotates refresh, new access |
 | POST | `/api/auth/logout` | Bearer | Revokes current access token |
+| POST | `/api/auth/logout-all` | Bearer | Revokes access + all refresh tokens for user |
 | GET | `/api/auth/me` | Bearer | |
 | GET/POST/PUT/DELETE | `/api/tasks` | Bearer | Per-user tasks |
 | POST | `/api/analytics/events` | Optional Bearer | Funnel events; `user_id` set when token valid |
 | GET/PUT | `/api/onboarding` | Bearer | Server-side onboarding snapshot |
+| POST | `/api/auth/otp/request` | No | OTP SMS via Netgsm when `NETGSM_*` set; else stub; `OTP_DEBUG=true` adds `debug_code` |
+| POST | `/api/auth/otp/verify` | No | Verifies code; returns tokens (creates user by phone if new) |
+| GET/POST/PUT/DELETE | `/api/family/members` | Bearer | Household roster (max 5 per account) |
+| POST | `/api/family/group` | Bearer | Create group + 6-digit `invite_code` |
+| POST | `/api/family/group/join` | Bearer | Body `{ "code" }`; join group (max 5 members) |
+| GET | `/api/family/group` | Bearer | Dashboard: members, scores, weakest link |
+| DELETE | `/api/family/group/leave` | Bearer | Leave or dissolve (leader) |
+| GET/PUT | `/api/bag/items` | Bearer | Deprem çantası checklist sync |
+| GET/PUT | `/api/score` | Bearer | Readiness score snapshot (0–100) |
+| GET/PUT | `/api/emergency/contacts` | Bearer | SOS recipients (max 3) |
+| POST | `/api/emergency/sos` | Bearer | Netgsm SMS to contacts; retries in background |
+| GET | `/api/emergency/sos/logs` | Bearer | Recent SOS attempts |
+| GET | `/api/emergency/guide/version` | No | Offline guide manifest / version (FR-GDE-06) |
+| POST | `/api/notifications/devices` | Bearer | Register FCM/Expo-style push token |
+| GET/PUT | `/api/notifications/settings` | Bearer | Timezone + do-not-disturb |
+| POST | `/api/notifications/test` | Bearer | Stub dispatch check (respects DND) |
+| GET | `/api/notifications/schedule` | Bearer | FR-NOT slot preview + next local fire times |
+| POST | `/api/notifications/run-due` | `X-Internal-Cron` | Batch dispatch (requires `CRON_SECRET`); idempotent daily log + Expo push |
 
-**Planv2 not yet in this repo (backend):** real OTP/SMS, JWT refresh, Netgsm SOS, push notification dispatch, family invite APIs — track under product backlog.
+Set `ENABLE_NOTIFICATION_SCHEDULER=true` to run the same batch every 15 minutes inside the API process (single-instance friendly). External orchestrators can call `POST /api/notifications/run-due` instead.
+
+Run backend unit tests: `npm install` (if new deps) then `npm run test --workspace backend`.
+
+**Client / ops follow-up (not server code):** wire mobile UI to these endpoints, store `refresh_token` securely, add production secrets and UAT. Native push delivery uses provider keys on the client or a dedicated push worker in production.
+
+**Planv2 backend modules in this repo:** OTP + Netgsm (when configured), refresh sessions, household + invite family group, bag/score sync, SOS + contacts + retries, push registration + settings + FR-NOT schedule preview + Expo batch dispatch + idempotent dispatch log + optional in-process scheduler / cron endpoint, guide version manifest.
 
 ## Reviewer Quick Check
 

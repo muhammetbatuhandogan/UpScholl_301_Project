@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "sections": ["during", "after", "72h", "trapped"],
+  "locale": "tr-TR",
+  "notes": "Client bundles offline HTML; this manifest is for sync/version checks (FR-GDE-06)."
+}

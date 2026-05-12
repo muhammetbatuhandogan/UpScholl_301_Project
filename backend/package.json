@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "..\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 4010 --app-dir .",
     "start": "..\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 4010 --app-dir .",
-    "db:upgrade": "..\\.venv\\Scripts\\python.exe -m alembic upgrade head"
+    "db:upgrade": "..\\.venv\\Scripts\\python.exe -m alembic upgrade head",
+    "test": "..\\.venv\\Scripts\\python.exe -m pytest -q"
   }
 }
