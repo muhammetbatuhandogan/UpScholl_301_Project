@@ -7,7 +7,7 @@ import {
   ROUTE_PATHS
 } from "./routes/index.js";
 import { loadUserData } from "./services/user-data.js";
-import { request } from "./ui/api-client.js";
+import { BACKEND_ORIGIN, request } from "./ui/api-client.js";
 import { createToast } from "./ui/toast.js";
 
 const DEFAULT_ONBOARDING = {
@@ -104,6 +104,19 @@ function renderCurrentRoute() {
   });
 }
 
+async function checkBackendHealth() {
+  try {
+    const response = await fetch(`${BACKEND_ORIGIN}/health`);
+    if (!response.ok) {
+      state.backendConnected = false;
+      return;
+    }
+    state.backendConnected = true;
+  } catch (_error) {
+    state.backendConnected = false;
+  }
+}
+
 async function checkSession() {
   const { token } = readAuthToken();
   if (!token) {
@@ -169,6 +182,7 @@ window.addEventListener("hashchange", () => {
 
 async function bootstrap() {
   state.route = resolveRouteFromHash();
+  await checkBackendHealth();
   await checkSession();
   if (state.isAuthenticated) {
     try {
@@ -179,6 +193,7 @@ async function bootstrap() {
     }
   } else {
     state.loading = false;
+    await loadTasks();
   }
   renderCurrentRoute();
 }

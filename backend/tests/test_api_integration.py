@@ -135,3 +135,18 @@ def test_refresh_token_rotation(client: TestClient):
     assert refresh.status_code == 200
     assert refresh.json()["access_token"]
     assert refresh.json()["refresh_token"]
+
+
+def test_cors_preflight_for_pages_origin(client: TestClient):
+    response = client.options(
+        "/api/auth/login",
+        headers={
+            "Origin": "https://upscholl-301-project.pages.dev",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == (
+        "https://upscholl-301-project.pages.dev"
+    )

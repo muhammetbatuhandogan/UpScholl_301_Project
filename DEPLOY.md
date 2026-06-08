@@ -68,8 +68,11 @@ Container başlarken `scripts/start.sh` otomatik **Alembic migration** çalışt
 
 ## Adım 3 — Cloudflare Pages (frontend)
 
-1. [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-2. GitHub repo'yu seç.
+> **Önemli:** **Workers** değil, **Pages** oluştur. Workers ekranında `Deploy command: npx wrangler deploy` görürsen yanlış yerdesin. Pages’te **Build output directory** alanı vardır; deploy command gerekmez.
+
+1. [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages** → **Create** → **Pages** sekmesi → **Connect to Git**.
+   - **Create Worker** / sadece Wrangler deploy ekranı **değil**.
+2. GitHub repo'yu seç: `UpScholl_301_Project`.
 3. Build ayarları:
 
 | Alan | Değer |
