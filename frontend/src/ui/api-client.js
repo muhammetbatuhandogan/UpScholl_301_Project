@@ -74,7 +74,9 @@ export async function request(path, options = {}, retried = false) {
             : JSON.stringify(errorBody.detail);
       }
     } catch (_ignored) {}
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) {

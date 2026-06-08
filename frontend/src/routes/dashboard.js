@@ -192,8 +192,12 @@ export const dashboardRoute = {
         state.isAuthenticated = true;
         state.username = user.username;
         await trackEvent("auth_login_success", { method: "password" });
-        await loadUserData();
-        showToast("Login successful.");
+        try {
+          await loadUserData();
+          showToast("Login successful.");
+        } catch (syncError) {
+          showToast(`Logged in, but sync failed: ${syncError.message}`);
+        }
       } catch (error) {
         state.isAuthenticated = false;
         state.username = "";
@@ -238,8 +242,12 @@ export const dashboardRoute = {
         state.isAuthenticated = true;
         state.username = user.username;
         await trackEvent("auth_otp_verified", { phone_last4: phone.slice(-4) });
-        await loadUserData();
-        showToast("OTP login successful.");
+        try {
+          await loadUserData();
+          showToast("OTP login successful.");
+        } catch (syncError) {
+          showToast(`Logged in, but sync failed: ${syncError.message}`);
+        }
       } catch (error) {
         showToast(`OTP verify failed: ${error.message}`);
       } finally {

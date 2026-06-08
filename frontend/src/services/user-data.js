@@ -102,7 +102,7 @@ export async function fetchFamilyGroup() {
   try {
     return await request("/family/group");
   } catch (error) {
-    if (String(error.message).includes("404")) {
+    if (error.status === 404) {
       return null;
     }
     throw error;
