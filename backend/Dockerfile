@@ -14,7 +14,7 @@ COPY alembic ./alembic
 COPY app ./app
 COPY scripts/start.sh ./scripts/start.sh
 
-RUN chmod +x ./scripts/start.sh
+RUN sed -i 's/\r$//' ./scripts/start.sh && chmod +x ./scripts/start.sh
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
