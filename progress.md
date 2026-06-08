@@ -95,3 +95,36 @@
 
 ### Next focus
 - Deeper refactors (split `main.js` into route modules) only if the team wants a larger structural change; backend persistence and product scope per `planv2.md` remain next milestones.
+
+## v4 - 8 Haziran 2026
+
+### Production deploy altyapısı (kredi kartı gerektirmez)
+- **Backend Dockerfile** + `scripts/start.sh` (Alembic migrate + uvicorn).
+- **Render** blueprint (`render.yaml`) — Docker tabanlı backend deploy.
+- **Frontend** production env: `VITE_API_URL` (`api-client.js`, `vite.config.js`, `.env.example`).
+- **CORS** production ayarı: `CORS_ORIGINS` env değişkeni.
+- **GitHub Actions CI** (`.github/workflows/ci.yml`): backend test, frontend build, Docker build.
+- **DEPLOY.md**: Aiven PostgreSQL + Render + Cloudflare Pages adım adım rehber.
+- Cloudflare Pages SPA routing: `frontend/public/_redirects`.
+
+### Doğrulama
+- Backend pytest: 5/5 geçti.
+- Frontend production build: OK.
+- Docker image build: OK.
+
+### Sıradaki adım
+- GitHub'a push → Aiven + Render + Cloudflare hesapları aç → DEPLOY.md adımlarını uygula.
+
+## v5 - 8 Haziran 2026
+
+### Web MVP — frontend ↔ backend entegrasyonu (Plan B)
+- **Auth:** refresh token saklama, 401'de otomatik yenileme, OTP login UI, logout API.
+- **Modüller API'ye bağlandı:** onboarding, bag, score, family (members + group), emergency (SOS contacts + gerçek SOS).
+- **Skor motoru:** bag/görev/onboarding/aile ağırlıklı `calculateReadinessScore`; değişikliklerde `/api/score` sync.
+- **Analitik:** onboarding ve auth funnel event'leri.
+- **Entegrasyon testleri:** `backend/tests/test_api_integration.py` (onboarding/bag/score, family, SOS, refresh).
+
+### Hâlâ plan dışı / sonraki faz
+- Expo mobil uygulama (planv2 asıl hedefi).
+- Haftalık görev setleri (FR-TSK-01..08), 40+ görev içeriği.
+- Push bildirim client, deep link, UAT gate.

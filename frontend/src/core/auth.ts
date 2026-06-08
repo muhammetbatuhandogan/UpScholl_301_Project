@@ -1,4 +1,5 @@
 const DEFAULT_TOKEN_KEY = 'upscholl_access_token';
+const DEFAULT_REFRESH_KEY = 'upscholl_refresh_token';
 
 type HeaderMap = Record<string, string>;
 
@@ -33,6 +34,33 @@ export const clearAuthToken = ({ storageKey = DEFAULT_TOKEN_KEY }: StorageKeyInp
   const hasWindow = typeof window !== 'undefined';
   if (!hasWindow) return { ok: false };
   window.localStorage.removeItem(storageKey);
+  return { ok: true };
+};
+
+export const readRefreshToken = ({ storageKey = DEFAULT_REFRESH_KEY }: StorageKeyInput = {}): { token: string | null } => {
+  const hasWindow = typeof window !== 'undefined';
+  if (!hasWindow) return { token: null };
+  const token = window.localStorage.getItem(storageKey);
+  return { token };
+};
+
+export const writeRefreshToken = ({ token, storageKey = DEFAULT_REFRESH_KEY }: WriteAuthTokenInput): { ok: boolean } => {
+  const hasWindow = typeof window !== 'undefined';
+  if (!hasWindow) return { ok: false };
+  window.localStorage.setItem(storageKey, token);
+  return { ok: true };
+};
+
+export const clearRefreshToken = ({ storageKey = DEFAULT_REFRESH_KEY }: StorageKeyInput = {}): { ok: boolean } => {
+  const hasWindow = typeof window !== 'undefined';
+  if (!hasWindow) return { ok: false };
+  window.localStorage.removeItem(storageKey);
+  return { ok: true };
+};
+
+export const clearAllTokens = (): { ok: boolean } => {
+  clearAuthToken();
+  clearRefreshToken();
   return { ok: true };
 };
 

@@ -1,5 +1,13 @@
-import { clearAuthToken, writeAuthToken } from "../core/auth";
+import { clearAllTokens } from "../core/auth";
+import { scoreColor } from "../core/score-engine.js";
 import { STATUS_ORDER } from "../content/constants.js";
+import {
+  loginWithPassword,
+  logoutSession,
+  requestOtp,
+  verifyOtp
+} from "../services/session.js";
+import { loadUserData, syncScore, trackEvent } from "../services/user-data.js";
 import { BACKEND_ORIGIN, request } from "../ui/api-client.js";
 
 function renderSummary(state, summaryList, lastUpdatedEl) {
@@ -11,8 +19,10 @@ function renderSummary(state, summaryList, lastUpdatedEl) {
     counts[task.status] = (counts[task.status] || 0) + 1;
   });
 
+  const scoreClass = scoreColor(state.score.total_score || 0);
   summaryList.innerHTML = `
-    <li><strong>Total:</strong> ${counts.total}</li>
+    <li><strong>Readiness score:</strong> <span class="score-value ${scoreClass}">${state.score.total_score ?? 0}</span></li>
+    <li><strong>Total tasks:</strong> ${counts.total}</li>
     <li><strong>todo:</strong> ${counts.todo || 0}</li>
     <li><strong>in-progress:</strong> ${counts["in-progress"] || 0}</li>
     <li><strong>done:</strong> ${counts.done || 0}</li>
@@ -49,7 +59,7 @@ function renderList(state, listStateEl, taskListEl) {
           <span class="badge badge-${task.status.replace("-", "_")}">${task.status}</span>
         </div>
         <div class="task-actions">
-          <select class="status-select" data-action="status">
+          <select class="status-select" data-action="status" ${task.status === "done" ? "disabled" : ""}>
             ${STATUS_ORDER.map(
               (status) =>
                 `<option value="${status}" ${task.status === status ? "selected" : ""}>${status}</option>`
@@ -67,11 +77,11 @@ export const dashboardRoute = {
   path: "dashboard",
   label: "Dashboard",
 
-  render(routeRoot, state, { showToast, renderCurrentRoute, loadTasks }) {
+  render(routeRoot, state, { showToast, renderCurrentRoute, loadTasks, loadUserData }) {
     routeRoot.innerHTML = `
     <section class="layout">
       <section class="card">
-        <h2>Login</h2>
+        <h2>Login (Demo)</h2>
         <form id="login-form" class="form">
           <label for="login-username">Username</label>
           <input id="login-username" name="loginUsername" value="demo" required />
@@ -86,6 +96,23 @@ export const dashboardRoute = {
       </section>
 
       <section class="card card-side">
+        <h2>OTP Login</h2>
+        <form id="otp-request-form" class="form">
+          <label for="otp-phone">Phone (E.164)</label>
+          <input id="otp-phone" name="otpPhone" placeholder="+905551234567" required />
+          <button id="otp-request-btn" type="submit" class="btn-primary">Send OTP</button>
+        </form>
+        <form id="otp-verify-form" class="form">
+          <label for="otp-code">6-digit code</label>
+          <input id="otp-code" name="otpCode" maxlength="6" pattern="[0-9]{6}" required />
+          <button id="otp-verify-btn" type="submit" class="btn-primary">Verify OTP</button>
+        </form>
+        <p id="otp-debug" class="muted"></p>
+      </section>
+    </section>
+
+    <section class="layout">
+      <section class="card card-side">
         <h2>Create Task</h2>
         <form id="task-form" class="form">
           <label for="task-title">Task title</label>
@@ -99,10 +126,8 @@ export const dashboardRoute = {
           <button id="create-btn" type="submit" class="btn-primary">Create Task</button>
         </form>
       </section>
-    </section>
 
-    <section class="layout single-column">
-      <section class="card">
+      <section class="card card-side">
         <h2>Summary</h2>
         <ul id="summary-list" class="summary-list"></ul>
         <div class="muted">Last updated: <span id="last-updated">-</span></div>
@@ -119,10 +144,15 @@ export const dashboardRoute = {
 
     const taskForm = document.querySelector("#task-form");
     const loginForm = document.querySelector("#login-form");
+    const otpRequestForm = document.querySelector("#otp-request-form");
+    const otpVerifyForm = document.querySelector("#otp-verify-form");
     const taskTitleInput = document.querySelector("#task-title");
     const taskStatusInput = document.querySelector("#task-status");
     const loginUsernameInput = document.querySelector("#login-username");
     const loginPasswordInput = document.querySelector("#login-password");
+    const otpPhoneInput = document.querySelector("#otp-phone");
+    const otpCodeInput = document.querySelector("#otp-code");
+    const otpDebugEl = document.querySelector("#otp-debug");
     const createBtn = document.querySelector("#create-btn");
     const loginBtn = document.querySelector("#login-btn");
     const logoutBtn = document.querySelector("#logout-btn");
@@ -158,32 +188,78 @@ export const dashboardRoute = {
       state.isSubmitting = true;
       renderCurrentRoute();
       try {
-        const data = await request("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ username, password })
-        });
-        writeAuthToken({ token: data.access_token });
+        const { user } = await loginWithPassword(username, password);
         state.isAuthenticated = true;
-        state.username = data.user.username;
+        state.username = user.username;
+        await trackEvent("auth_login_success", { method: "password" });
+        await loadUserData();
         showToast("Login successful.");
-        await loadTasks();
       } catch (error) {
         state.isAuthenticated = false;
         state.username = "";
         showToast(`Login failed: ${error.message}`);
-        renderCurrentRoute();
       } finally {
         state.isSubmitting = false;
         renderCurrentRoute();
       }
     });
 
-    logoutBtn.addEventListener("click", () => {
-      clearAuthToken();
+    otpRequestForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const phone = otpPhoneInput.value.trim();
+      state.isSubmitting = true;
+      renderCurrentRoute();
+      try {
+        const data = await requestOtp(phone);
+        await trackEvent("auth_otp_sent", { phone_last4: phone.slice(-4) });
+        if (data.debug_code) {
+          otpDebugEl.textContent = `Debug OTP (dev only): ${data.debug_code}`;
+          otpCodeInput.value = data.debug_code;
+        } else {
+          otpDebugEl.textContent = "OTP sent. Check SMS.";
+        }
+        showToast("OTP sent.");
+      } catch (error) {
+        showToast(`OTP request failed: ${error.message}`);
+      } finally {
+        state.isSubmitting = false;
+        renderCurrentRoute();
+      }
+    });
+
+    otpVerifyForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const phone = otpPhoneInput.value.trim();
+      const code = otpCodeInput.value.trim();
+      state.isSubmitting = true;
+      renderCurrentRoute();
+      try {
+        const { user } = await verifyOtp(phone, code);
+        state.isAuthenticated = true;
+        state.username = user.username;
+        await trackEvent("auth_otp_verified", { phone_last4: phone.slice(-4) });
+        await loadUserData();
+        showToast("OTP login successful.");
+      } catch (error) {
+        showToast(`OTP verify failed: ${error.message}`);
+      } finally {
+        state.isSubmitting = false;
+        renderCurrentRoute();
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      state.isSubmitting = true;
+      renderCurrentRoute();
+      await logoutSession();
       state.isAuthenticated = false;
       state.username = "";
       state.tasks = [];
+      state.family = { members: [] };
+      state.familyGroup = null;
+      state.score = { total_score: 0, breakdown: null, updated_at: null };
       state.error = "Login required to view tasks.";
+      state.isSubmitting = false;
       renderCurrentRoute();
       showToast("Logged out.");
     });
@@ -209,11 +285,11 @@ export const dashboardRoute = {
         });
         taskForm.reset();
         taskStatusInput.value = "todo";
-        showToast("Task created.");
         await loadTasks();
+        await syncScore(state);
+        showToast("Task created.");
       } catch (error) {
         showToast(`Create failed: ${error.message}`);
-        renderCurrentRoute();
       } finally {
         state.isSubmitting = false;
         renderCurrentRoute();
@@ -232,8 +308,9 @@ export const dashboardRoute = {
       if (!accepted) return;
       try {
         await request(`/tasks/${id}`, { method: "DELETE" });
-        showToast("Task deleted.");
         await loadTasks();
+        await syncScore(state);
+        showToast("Task deleted.");
       } catch (error) {
         showToast(`Delete failed: ${error.message}`);
       }
@@ -250,13 +327,19 @@ export const dashboardRoute = {
       const status = event.target.value;
       const task = state.tasks.find((item) => item.id === id);
       if (!task) return;
+      if (task.status === "done" && status !== "done") {
+        showToast("Completed tasks cannot be reverted.");
+        event.target.value = "done";
+        return;
+      }
       try {
         await request(`/tasks/${id}`, {
           method: "PUT",
           body: JSON.stringify({ title: task.title, status })
         });
-        showToast("Status updated.");
         await loadTasks();
+        await syncScore(state);
+        showToast("Status updated.");
       } catch (error) {
         showToast(`Update failed: ${error.message}`);
       }

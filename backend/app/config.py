@@ -51,3 +51,10 @@ def get_cron_secret() -> str:
 
 def get_enable_notification_scheduler() -> bool:
     return os.getenv("ENABLE_NOTIFICATION_SCHEDULER", "false").lower() in ("1", "true", "yes")
+
+
+def get_cors_origins() -> list[str]:
+    raw = os.getenv("CORS_ORIGINS", "*").strip()
+    if not raw or raw == "*":
+        return ["*"]
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]

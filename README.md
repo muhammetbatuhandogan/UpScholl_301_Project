@@ -158,6 +158,15 @@ Set `ENABLE_NOTIFICATION_SCHEDULER=true` to run the same batch every 15 minutes 
 
 Run backend unit tests: `npm install` (if new deps) then `npm run test --workspace backend`.
 
+## Production Deploy (no credit card)
+
+See **[DEPLOY.md](./DEPLOY.md)** for step-by-step deployment:
+
+- **Database:** Aiven PostgreSQL (free, no card)
+- **Backend:** Render (Docker, GitHub deploy, free tier)
+- **Frontend:** Cloudflare Pages (CDN, `VITE_API_URL` env)
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`)
+
 **Client / ops follow-up (not server code):** wire mobile UI to these endpoints, store `refresh_token` securely, add production secrets and UAT. Native push delivery uses provider keys on the client or a dedicated push worker in production.
 
 **Planv2 backend modules in this repo:** OTP + Netgsm (when configured), refresh sessions, household + invite family group, bag/score sync, SOS + contacts + retries, push registration + settings + FR-NOT schedule preview + Expo batch dispatch + idempotent dispatch log + optional in-process scheduler / cron endpoint, guide version manifest.
@@ -175,6 +184,6 @@ If someone opens this repository and wants to verify that the project is running
    - `/health` shows `"database": "connected"` when Postgres is reachable
    - login succeeds
    - task CRUD works after login
-7. Optional UI pass (no backend required): open **Onboarding**, **Bag**, **Family**, and **Emergency** tabs and confirm forms/lists render and persist after a refresh (`localStorage`).
+7. Optional UI pass: open **Onboarding**, **Bag**, **Family**, and **Emergency** tabs after login and confirm data persists after refresh (backend API sync).
 
 This confirms the project reached a working first-level full-stack state with the current MVP-style modules.

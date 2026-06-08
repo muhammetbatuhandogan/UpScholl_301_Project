@@ -1,14 +1,21 @@
-import { calculateInitialScore } from "../core/score-engine.js";
-import { saveOnboardingState } from "../storage/onboarding.js";
+import { calculateInitialScore, scoreColor } from "../core/score-engine.js";
+import { saveOnboarding, syncScore, trackEvent } from "../services/user-data.js";
+import { isAuthenticated, renderAuthGate } from "../ui/auth-gate.js";
 
 export const onboardingRoute = {
   path: "onboarding",
   label: "Onboarding",
 
   render(routeRoot, state, { showToast, renderCurrentRoute }) {
+    if (!isAuthenticated(state)) {
+      renderAuthGate(routeRoot, "Onboarding");
+      return;
+    }
+
     const onboarding = state.onboarding;
     const currentStep = Math.max(1, Math.min(onboarding.step, 3));
     const initialScore = calculateInitialScore(onboarding);
+    const scoreClass = scoreColor(initialScore);
 
     let stepContent = "";
     if (currentStep === 1) {
@@ -44,7 +51,7 @@ export const onboardingRoute = {
       stepContent = `
       <div class="score-box">
         <div class="muted">Estimated initial preparedness score</div>
-        <div class="score-value">${initialScore}</div>
+        <div class="score-value ${scoreClass}">${initialScore}</div>
       </div>
       <ul class="summary-list">
         <li><strong>Region:</strong> ${onboarding.region || "-"}</li>
@@ -58,7 +65,7 @@ export const onboardingRoute = {
     routeRoot.innerHTML = `
     <section class="card">
       <h2>Onboarding Module</h2>
-      <p class="muted">Step ${currentStep} / 3 ${onboarding.completed ? "• Completed" : ""}</p>
+      <p class="muted">Step ${currentStep} / 3 ${onboarding.completed ? "• Completed" : ""} • synced with backend</p>
       <form id="onboarding-form" class="form">
         ${stepContent}
         <div class="task-actions">
@@ -72,13 +79,17 @@ export const onboardingRoute = {
     const form = document.querySelector("#onboarding-form");
     const previousButton = document.querySelector("#onb-prev");
 
-    previousButton.addEventListener("click", () => {
+    previousButton.addEventListener("click", async () => {
       state.onboarding.step = Math.max(1, state.onboarding.step - 1);
-      saveOnboardingState(state.onboarding);
-      renderCurrentRoute();
+      try {
+        state.onboarding = await saveOnboarding(state.onboarding);
+        renderCurrentRoute();
+      } catch (error) {
+        showToast(`Save failed: ${error.message}`);
+      }
     });
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const formData = new FormData(form);
       if (currentStep === 1) {
@@ -88,17 +99,29 @@ export const onboardingRoute = {
           return;
         }
         state.onboarding.step = 2;
+        await trackEvent("onboarding_step_1_completed");
       } else if (currentStep === 2) {
         state.onboarding.familySize = String(formData.get("familySize") || "1");
         state.onboarding.hasChildren = String(formData.get("hasChildren") || "no");
         state.onboarding.hasElderly = String(formData.get("hasElderly") || "no");
         state.onboarding.step = 3;
+        await trackEvent("onboarding_step_2_completed");
       } else {
         state.onboarding.completed = true;
-        showToast("Onboarding completed.");
+        await trackEvent("onboarding_step_3_completed");
+        await trackEvent("first_score_viewed", { score: initialScore });
       }
-      saveOnboardingState(state.onboarding);
-      renderCurrentRoute();
+
+      try {
+        state.onboarding = await saveOnboarding(state.onboarding);
+        await syncScore(state);
+        if (state.onboarding.completed) {
+          showToast("Onboarding completed and saved.");
+        }
+        renderCurrentRoute();
+      } catch (error) {
+        showToast(`Save failed: ${error.message}`);
+      }
     });
   }
 };

@@ -1,20 +1,75 @@
-import { calculateFamilyScore } from "../core/score-engine.js";
-import { saveFamilyState } from "../storage/family.js";
+import { calculateFamilyScore, scoreColor } from "../core/score-engine.js";
+import {
+  createFamilyGroup,
+  createFamilyMember,
+  deleteFamilyMember,
+  fetchFamilyGroup,
+  joinFamilyGroup,
+  leaveFamilyGroup,
+  syncScore
+} from "../services/user-data.js";
+import { isAuthenticated, renderAuthGate } from "../ui/auth-gate.js";
 
 export const familyRoute = {
   path: "family",
   label: "Family",
 
   render(routeRoot, state, { showToast, renderCurrentRoute }) {
+    if (!isAuthenticated(state)) {
+      renderAuthGate(routeRoot, "Family");
+      return;
+    }
+
     const members = state.family.members;
-    const familyScore = calculateFamilyScore(members);
+    const group = state.familyGroup;
+    const familyScore = group
+      ? Math.round(group.family_average_score)
+      : calculateFamilyScore(members);
     const isAtMaxCapacity = members.length >= 5;
+
+    const groupSection = group
+      ? `
+      <section class="card">
+        <h2>Family Group</h2>
+        <p class="muted">Invite code: <strong>${group.invite_code}</strong></p>
+        <ul class="task-list">
+          ${group.members
+            .map(
+              (member) => `
+            <li class="task-item ${member.user_id === group.weakest_user_id ? "weakest-member" : ""}">
+              <div>
+                <div class="task-title">${member.username}${member.is_leader ? " (leader)" : ""}</div>
+                <span class="score-value ${scoreColor(member.total_score)}">${member.total_score}</span>
+                ${member.user_id === group.weakest_user_id ? '<span class="muted">Weakest link</span>' : ""}
+              </div>
+            </li>
+          `
+            )
+            .join("")}
+        </ul>
+        <button id="leave-group-btn" type="button" class="btn-danger">Leave Group</button>
+      </section>
+    `
+      : `
+      <section class="card">
+        <h2>Family Group</h2>
+        <p class="muted">Create a group or join with a 6-digit invite code.</p>
+        <div class="task-actions">
+          <button id="create-group-btn" type="button" class="btn-primary">Create Group</button>
+        </div>
+        <form id="join-group-form" class="form">
+          <label for="invite-code">Invite code</label>
+          <input id="invite-code" name="inviteCode" maxlength="6" pattern="[0-9]{6}" required />
+          <button type="submit" class="btn-primary">Join Group</button>
+        </form>
+      </section>
+    `;
 
     routeRoot.innerHTML = `
     <section class="layout">
       <section class="card">
-        <h2>Family Module</h2>
-        <p class="muted">Add up to 5 members and track average preparedness score.</p>
+        <h2>Household Members</h2>
+        <p class="muted">Local roster (max 5) synced with backend.</p>
         <form id="family-form" class="form">
           <label for="family-name">Member name</label>
           <input id="family-name" name="memberName" maxlength="60" required />
@@ -41,11 +96,13 @@ export const familyRoute = {
         <h2>Family Summary</h2>
         <ul class="summary-list">
           <li><strong>Members:</strong> ${members.length}/5</li>
-          <li><strong>Family score:</strong> ${familyScore}</li>
-          <li><strong>Status:</strong> ${members.length ? "Active" : "No members yet"}</li>
+          <li><strong>Family score:</strong> <span class="score-value ${scoreColor(familyScore)}">${familyScore}</span></li>
+          <li><strong>Group:</strong> ${group ? "Active" : "Not joined"}</li>
         </ul>
       </section>
     </section>
+
+    ${groupSection}
 
     <section class="card">
       <h2>Members</h2>
@@ -69,7 +126,7 @@ export const familyRoute = {
                 )
                 .join("")}
             </ul>`
-          : `<p class="muted">No family members added yet.</p>`
+          : `<p class="muted">No household members added yet.</p>`
       }
     </section>
   `;
@@ -77,7 +134,7 @@ export const familyRoute = {
     const familyForm = document.querySelector("#family-form");
     const membersList = document.querySelector("#family-members-list");
 
-    familyForm.addEventListener("submit", (event) => {
+    familyForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (state.family.members.length >= 5) {
         showToast("Maximum 5 family members allowed.");
@@ -98,34 +155,83 @@ export const familyRoute = {
         return;
       }
 
-      const member = {
-        id: `fm_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        name,
-        role,
-        score
-      };
-      state.family.members = [member, ...state.family.members];
-      saveFamilyState(state.family);
-      familyForm.reset();
-      const scoreInput = document.querySelector("#family-score");
-      scoreInput.value = "50";
-      showToast("Family member added.");
-      renderCurrentRoute();
+      try {
+        const member = await createFamilyMember({ name, role, score });
+        state.family.members = [member, ...state.family.members];
+        await syncScore(state);
+        familyForm.reset();
+        document.querySelector("#family-score").value = "50";
+        showToast("Family member added.");
+        renderCurrentRoute();
+      } catch (error) {
+        showToast(`Add failed: ${error.message}`);
+      }
     });
 
     if (membersList) {
-      membersList.addEventListener("click", (event) => {
+      membersList.addEventListener("click", async (event) => {
         const action = event.target.getAttribute("data-action");
         if (action !== "remove-member") return;
         const row = event.target.closest(".task-item");
         if (!row) return;
-        const memberId = row.getAttribute("data-family-id");
-        state.family.members = state.family.members.filter(
-          (member) => member.id !== memberId
-        );
-        saveFamilyState(state.family);
-        showToast("Family member removed.");
-        renderCurrentRoute();
+        const memberId = Number(row.getAttribute("data-family-id"));
+        try {
+          await deleteFamilyMember(memberId);
+          state.family.members = state.family.members.filter(
+            (member) => member.id !== memberId
+          );
+          await syncScore(state);
+          showToast("Family member removed.");
+          renderCurrentRoute();
+        } catch (error) {
+          showToast(`Remove failed: ${error.message}`);
+        }
+      });
+    }
+
+    const createGroupBtn = document.querySelector("#create-group-btn");
+    if (createGroupBtn) {
+      createGroupBtn.addEventListener("click", async () => {
+        try {
+          await createFamilyGroup();
+          state.familyGroup = await fetchFamilyGroup();
+          showToast("Family group created.");
+          renderCurrentRoute();
+        } catch (error) {
+          showToast(`Create group failed: ${error.message}`);
+        }
+      });
+    }
+
+    const joinGroupForm = document.querySelector("#join-group-form");
+    if (joinGroupForm) {
+      joinGroupForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const code = String(new FormData(joinGroupForm).get("inviteCode") || "").trim();
+        try {
+          await joinFamilyGroup(code);
+          state.familyGroup = await fetchFamilyGroup();
+          await syncScore(state);
+          showToast("Joined family group.");
+          renderCurrentRoute();
+        } catch (error) {
+          showToast(`Join failed: ${error.message}`);
+        }
+      });
+    }
+
+    const leaveGroupBtn = document.querySelector("#leave-group-btn");
+    if (leaveGroupBtn) {
+      leaveGroupBtn.addEventListener("click", async () => {
+        try {
+          await leaveFamilyGroup();
+          state.familyGroup = null;
+          await syncScore(state);
+          showToast("Left family group.");
+          renderCurrentRoute();
+        } catch (error) {
+          showToast(`Leave failed: ${error.message}`);
+        }
       });
     }
   }

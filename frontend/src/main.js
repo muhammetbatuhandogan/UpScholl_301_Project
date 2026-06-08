@@ -1,16 +1,23 @@
 import "./styles.css";
-import { clearAuthToken, readAuthToken } from "./core/auth";
-import { loadBagState } from "./storage/bag.js";
-import { loadEmergencyState } from "./storage/emergency.js";
-import { loadFamilyState } from "./storage/family.js";
-import { loadOnboardingState } from "./storage/onboarding.js";
+import { clearAllTokens, readAuthToken } from "./core/auth";
+import { BAG_DEFAULT_ITEMS } from "./content/bag-items.js";
 import {
   buildTabsNavMarkup,
   getRoute,
   ROUTE_PATHS
 } from "./routes/index.js";
+import { loadUserData } from "./services/user-data.js";
 import { request } from "./ui/api-client.js";
 import { createToast } from "./ui/toast.js";
+
+const DEFAULT_ONBOARDING = {
+  step: 1,
+  region: "",
+  familySize: "1",
+  hasChildren: "no",
+  hasElderly: "no",
+  completed: false
+};
 
 const app = document.querySelector("#app");
 
@@ -18,10 +25,16 @@ const state = {
   route: "dashboard",
   isAuthenticated: false,
   username: "",
-  onboarding: loadOnboardingState(),
-  bagItems: loadBagState(),
-  family: loadFamilyState(),
-  emergency: loadEmergencyState(),
+  onboarding: { ...DEFAULT_ONBOARDING },
+  bagItems: BAG_DEFAULT_ITEMS.map((item) => ({ ...item, checked: false })),
+  family: { members: [] },
+  familyGroup: null,
+  emergency: {
+    sosContacts: [],
+    selectedGuide: "during",
+    lastSosAt: ""
+  },
+  score: { total_score: 0, breakdown: null, updated_at: null },
   tasks: [],
   loading: true,
   error: "",
@@ -36,7 +49,7 @@ app.innerHTML = `
     <header class="topbar">
       <div>
         <h1>UpScholl Frontend</h1>
-        <p>Deprem hazırlık MVP: auth, görev panosu ve modüller (onboarding, çanta, aile, acil durum).</p>
+        <p>Deprem hazırlık MVP: backend API ile senkron modüller.</p>
       </div>
       <span id="backend-pill" class="pill pill-offline">Backend: checking...</span>
     </header>
@@ -86,7 +99,8 @@ function renderCurrentRoute() {
   route.render(routeRoot, state, {
     showToast,
     renderCurrentRoute,
-    loadTasks
+    loadTasks,
+    loadUserData: reloadUserData
   });
 }
 
@@ -102,9 +116,22 @@ async function checkSession() {
     state.isAuthenticated = true;
     state.username = me.username;
   } catch (_error) {
-    clearAuthToken();
+    clearAllTokens();
     state.isAuthenticated = false;
     state.username = "";
+  }
+}
+
+async function reloadUserData() {
+  if (!state.isAuthenticated) return;
+  try {
+    await loadUserData(state);
+    state.backendConnected = true;
+    state.error = "";
+  } catch (error) {
+    state.error = `Failed to sync data: ${error.message}`;
+    state.backendConnected = false;
+    throw error;
   }
 }
 
@@ -143,8 +170,17 @@ window.addEventListener("hashchange", () => {
 async function bootstrap() {
   state.route = resolveRouteFromHash();
   await checkSession();
+  if (state.isAuthenticated) {
+    try {
+      await reloadUserData();
+      state.loading = false;
+    } catch (_error) {
+      state.loading = false;
+    }
+  } else {
+    state.loading = false;
+  }
   renderCurrentRoute();
-  await loadTasks();
 }
 
 bootstrap();

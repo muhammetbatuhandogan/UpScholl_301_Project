@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.config import get_enable_notification_scheduler
+from app.config import get_cors_origins, get_enable_notification_scheduler
 from app.db.session import get_db
 from app.routers.analytics_router import router as analytics_router
 from app.routers.auth_router import router as auth_router
@@ -64,7 +64,7 @@ app = FastAPI(title="UpScholl Backend", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

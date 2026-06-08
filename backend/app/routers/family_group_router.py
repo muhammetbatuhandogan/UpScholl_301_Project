@@ -14,7 +14,7 @@ from app.services.family_group_service import (
     create_group as create_family_group,
     get_dashboard as get_family_group_dashboard,
     join_group as join_family_group,
-    leave_group as leave_family_group,
+    leave_group as leave_family_group_service,
 )
 
 router = APIRouter(prefix="/api/family", tags=["family-group"])
@@ -73,12 +73,12 @@ async def get_family_group(
 
 
 @router.delete("/group/leave")
-async def leave_family_group(
+async def leave_group(
     db: Session = Depends(get_db),
     current_user: UserProfile = Depends(get_current_user),
 ) -> dict:
     try:
-        leave_family_group(db, current_user.id)
+        leave_family_group_service(db, current_user.id)
     except ValueError as exc:
         if str(exc) == "not_in_group":
             raise HTTPException(status_code=404, detail="Not in a family group.") from exc

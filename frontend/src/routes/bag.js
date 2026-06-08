@@ -1,10 +1,16 @@
-import { saveBagState } from "../storage/bag.js";
+import { saveBagItems, syncScore } from "../services/user-data.js";
+import { isAuthenticated, renderAuthGate } from "../ui/auth-gate.js";
 
 export const bagRoute = {
   path: "bag",
   label: "Bag",
 
-  render(routeRoot, state, { renderCurrentRoute }) {
+  render(routeRoot, state, { showToast, renderCurrentRoute }) {
+    if (!isAuthenticated(state)) {
+      renderAuthGate(routeRoot, "Emergency Bag");
+      return;
+    }
+
     const grouped = state.bagItems.reduce((acc, item) => {
       if (!acc[item.category]) acc[item.category] = [];
       acc[item.category].push(item);
@@ -42,7 +48,7 @@ export const bagRoute = {
     routeRoot.innerHTML = `
     <section class="card">
       <h2>Emergency Bag Module</h2>
-      <p class="muted">Track your bag readiness and update items as you complete them.</p>
+      <p class="muted">Checklist synced with backend API.</p>
       <div class="progress-wrap">
         <div class="progress-label">
           <strong>${checkedCount}/${totalCount}</strong> completed
@@ -57,13 +63,18 @@ export const bagRoute = {
   `;
 
     routeRoot.querySelectorAll("input[type='checkbox'][data-bag-id]").forEach((checkbox) => {
-      checkbox.addEventListener("change", (event) => {
+      checkbox.addEventListener("change", async (event) => {
         const bagId = event.target.getAttribute("data-bag-id");
         state.bagItems = state.bagItems.map((item) =>
           item.id === bagId ? { ...item, checked: event.target.checked } : item
         );
-        saveBagState(state.bagItems);
-        renderCurrentRoute();
+        try {
+          state.bagItems = await saveBagItems(state.bagItems);
+          await syncScore(state);
+          renderCurrentRoute();
+        } catch (error) {
+          showToast(`Bag sync failed: ${error.message}`);
+        }
       });
     });
   }
