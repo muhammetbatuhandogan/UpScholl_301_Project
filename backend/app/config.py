@@ -4,7 +4,11 @@ DEFAULT_DATABASE_URL = "postgresql://upscholl:upscholl_dev@127.0.0.1:5432/upscho
 
 
 def get_database_url() -> str:
-    return os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL).strip()
+    url = os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL).strip()
+    # Aiven/Heroku often provide postgres://; SQLAlchemy requires postgresql://
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://") :]
+    return url
 
 
 def get_otp_debug() -> bool:

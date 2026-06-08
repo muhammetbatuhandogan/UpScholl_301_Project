@@ -28,9 +28,9 @@ Bu rehber, **UpScholl** projesini ücretsiz ve kredi kartı istemeyen servislerl
 3. Region seç (Avrupa: `aws-eu-central-1` vb.).
 4. Servis hazır olunca **Connection information** → **URI** kopyala.
    - Örnek: `postgres://avnadmin:PASSWORD@HOST:PORT/defaultdb?sslmode=require`
-5. FastAPI/SQLAlchemy için şema kullan:
-   - `postgres://` → `postgresql://` olarak değiştir (başına `ql` ekle).
-   - Son hali: `postgresql://avnadmin:PASSWORD@HOST:PORT/defaultdb?sslmode=require`
+5. FastAPI/SQLAlchemy için URI kullan:
+   - Tercih: `postgresql://avnadmin:PASSWORD@HOST:PORT/defaultdb?sslmode=require`
+   - Aiven bazen `postgres://` verir; kod bunu otomatik `postgresql://` yapar, yine de `postgresql://` kullanmak daha güvenli.
 
 Bu URL'yi bir yere kaydet — **Adım 2**'de `DATABASE_URL` olarak kullanacaksın.
 
