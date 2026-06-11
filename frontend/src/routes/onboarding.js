@@ -1,14 +1,15 @@
+import { t } from "../core/i18n.js";
 import { calculateInitialScore, scoreColor } from "../core/score-engine.js";
 import { saveOnboarding, syncScore, trackEvent } from "../services/user-data.js";
 import { isAuthenticated, renderAuthGate } from "../ui/auth-gate.js";
 
 export const onboardingRoute = {
   path: "onboarding",
-  label: "Onboarding",
+  labelKey: "nav_onboarding",
 
   render(routeRoot, state, { showToast, renderCurrentRoute }) {
     if (!isAuthenticated(state)) {
-      renderAuthGate(routeRoot, "Onboarding");
+      renderAuthGate(routeRoot, t("nav_onboarding"));
       return;
     }
 
@@ -20,13 +21,13 @@ export const onboardingRoute = {
     let stepContent = "";
     if (currentStep === 1) {
       stepContent = `
-      <label for="onb-region">Region / City</label>
-      <input id="onb-region" name="region" placeholder="e.g. Istanbul" value="${onboarding.region}" required />
-      <p class="muted">Select your main living region to personalize preparedness context.</p>
+      <label for="onb-region">${t("region_label")}</label>
+      <input id="onb-region" name="region" placeholder="${t("region_ph")}" value="${onboarding.region}" required />
+      <p class="muted">${t("region_hint")}</p>
     `;
     } else if (currentStep === 2) {
       stepContent = `
-      <label for="onb-family-size">Family size</label>
+      <label for="onb-family-size">${t("family_size")}</label>
       <select id="onb-family-size" name="familySize">
         <option value="1" ${onboarding.familySize === "1" ? "selected" : ""}>1</option>
         <option value="2" ${onboarding.familySize === "2" ? "selected" : ""}>2</option>
@@ -35,42 +36,42 @@ export const onboardingRoute = {
         <option value="5+" ${onboarding.familySize === "5+" ? "selected" : ""}>5+</option>
       </select>
 
-      <label for="onb-children">Children in family?</label>
+      <label for="onb-children">${t("children_q")}</label>
       <select id="onb-children" name="hasChildren">
-        <option value="no" ${onboarding.hasChildren === "no" ? "selected" : ""}>No</option>
-        <option value="yes" ${onboarding.hasChildren === "yes" ? "selected" : ""}>Yes</option>
+        <option value="no" ${onboarding.hasChildren === "no" ? "selected" : ""}>${t("no")}</option>
+        <option value="yes" ${onboarding.hasChildren === "yes" ? "selected" : ""}>${t("yes")}</option>
       </select>
 
-      <label for="onb-elderly">Elderly or disabled member?</label>
+      <label for="onb-elderly">${t("elderly_q")}</label>
       <select id="onb-elderly" name="hasElderly">
-        <option value="no" ${onboarding.hasElderly === "no" ? "selected" : ""}>No</option>
-        <option value="yes" ${onboarding.hasElderly === "yes" ? "selected" : ""}>Yes</option>
+        <option value="no" ${onboarding.hasElderly === "no" ? "selected" : ""}>${t("no")}</option>
+        <option value="yes" ${onboarding.hasElderly === "yes" ? "selected" : ""}>${t("yes")}</option>
       </select>
     `;
     } else {
       stepContent = `
       <div class="score-box">
-        <div class="muted">Estimated initial preparedness score</div>
+        <div class="muted">${t("est_score")}</div>
         <div class="score-value ${scoreClass}">${initialScore}</div>
       </div>
       <ul class="summary-list">
-        <li><strong>Region:</strong> ${onboarding.region || "-"}</li>
-        <li><strong>Family size:</strong> ${onboarding.familySize}</li>
-        <li><strong>Children:</strong> ${onboarding.hasChildren}</li>
-        <li><strong>Elderly/Disabled:</strong> ${onboarding.hasElderly}</li>
+        <li><strong>${t("region_sum")}:</strong> ${onboarding.region || "-"}</li>
+        <li><strong>${t("family_size")}:</strong> ${onboarding.familySize}</li>
+        <li><strong>${t("children_sum")}:</strong> ${onboarding.hasChildren === "yes" ? t("yes") : t("no")}</li>
+        <li><strong>${t("elderly_sum")}:</strong> ${onboarding.hasElderly === "yes" ? t("yes") : t("no")}</li>
       </ul>
     `;
     }
 
     routeRoot.innerHTML = `
     <section class="card">
-      <h2>Onboarding Module</h2>
-      <p class="muted">Step ${currentStep} / 3 ${onboarding.completed ? "• Completed" : ""} • synced with backend</p>
+      <h2>${t("onb_title")}</h2>
+      <p class="muted">${t("step")} ${currentStep} / 3 ${onboarding.completed ? `• ${t("completed_tag")}` : ""} • ${t("synced")}</p>
       <form id="onboarding-form" class="form">
         ${stepContent}
         <div class="task-actions">
-          <button id="onb-prev" type="button" class="btn-danger" ${currentStep === 1 ? "disabled" : ""}>Back</button>
-          <button id="onb-next" type="submit" class="btn-primary">${currentStep === 3 ? "Finish" : "Continue"}</button>
+          <button id="onb-prev" type="button" class="btn-danger" ${currentStep === 1 ? "disabled" : ""}>${t("back")}</button>
+          <button id="onb-next" type="submit" class="btn-primary">${currentStep === 3 ? t("finish") : t("continue")}</button>
         </div>
       </form>
     </section>
@@ -85,7 +86,7 @@ export const onboardingRoute = {
         state.onboarding = await saveOnboarding(state.onboarding);
         renderCurrentRoute();
       } catch (error) {
-        showToast(`Save failed: ${error.message}`);
+        showToast(`${t("save_failed")}: ${error.message}`);
       }
     });
 
@@ -95,7 +96,7 @@ export const onboardingRoute = {
       if (currentStep === 1) {
         state.onboarding.region = String(formData.get("region") || "").trim();
         if (!state.onboarding.region) {
-          showToast("Region is required.");
+          showToast(t("region_required"));
           return;
         }
         state.onboarding.step = 2;
@@ -116,11 +117,11 @@ export const onboardingRoute = {
         state.onboarding = await saveOnboarding(state.onboarding);
         await syncScore(state);
         if (state.onboarding.completed) {
-          showToast("Onboarding completed and saved.");
+          showToast(t("onb_saved"));
         }
         renderCurrentRoute();
       } catch (error) {
-        showToast(`Save failed: ${error.message}`);
+        showToast(`${t("save_failed")}: ${error.message}`);
       }
     });
   }

@@ -1,13 +1,15 @@
+import { pick, t } from "../core/i18n.js";
+import { BAG_CATEGORY_LABELS } from "../content/bag-items.js";
 import { saveBagItems, syncScore } from "../services/user-data.js";
 import { isAuthenticated, renderAuthGate } from "../ui/auth-gate.js";
 
 export const bagRoute = {
   path: "bag",
-  label: "Bag",
+  labelKey: "nav_bag",
 
   render(routeRoot, state, { showToast, renderCurrentRoute }) {
     if (!isAuthenticated(state)) {
-      renderAuthGate(routeRoot, "Emergency Bag");
+      renderAuthGate(routeRoot, t("bag_title"));
       return;
     }
 
@@ -25,7 +27,7 @@ export const bagRoute = {
       .map(
         ([category, items]) => `
       <section class="bag-category">
-        <h3>${category}</h3>
+        <h3>${pick(BAG_CATEGORY_LABELS[category]) || category}</h3>
         <ul class="bag-list">
           ${items
             .map(
@@ -33,7 +35,7 @@ export const bagRoute = {
             <li>
               <label class="bag-item">
                 <input type="checkbox" data-bag-id="${item.id}" ${item.checked ? "checked" : ""} />
-                <span>${item.label}</span>
+                <span>${pick(item.label)}</span>
               </label>
             </li>
           `
@@ -47,11 +49,11 @@ export const bagRoute = {
 
     routeRoot.innerHTML = `
     <section class="card">
-      <h2>Emergency Bag Module</h2>
-      <p class="muted">Checklist synced with backend API.</p>
+      <h2>${t("bag_title")}</h2>
+      <p class="muted">${t("bag_subtitle")}</p>
       <div class="progress-wrap">
         <div class="progress-label">
-          <strong>${checkedCount}/${totalCount}</strong> completed
+          <strong>${checkedCount}/${totalCount}</strong> ${t("completed_label")}
           <span>${progress}%</span>
         </div>
         <div class="progress-track">
@@ -73,7 +75,7 @@ export const bagRoute = {
           await syncScore(state);
           renderCurrentRoute();
         } catch (error) {
-          showToast(`Bag sync failed: ${error.message}`);
+          showToast(`${t("bag_sync_failed")}: ${error.message}`);
         }
       });
     });

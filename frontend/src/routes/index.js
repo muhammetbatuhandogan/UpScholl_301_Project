@@ -1,3 +1,4 @@
+import { t } from "../core/i18n.js";
 import { bagRoute } from "./bag.js";
 import { dashboardRoute } from "./dashboard.js";
 import { emergencyRoute } from "./emergency.js";
@@ -22,7 +23,7 @@ export function buildTabsNavMarkup() {
   return routes
     .map(
       (r) =>
-        `<a href="#${r.path}" class="tab-link" data-route="${r.path}">${r.label}</a>`
+        `<a href="#${r.path}" class="tab-link" data-route="${r.path}">${t(r.labelKey)}</a>`
     )
     .join("\n      ");
 }

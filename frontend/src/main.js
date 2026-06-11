@@ -1,5 +1,6 @@
 import "./styles.css";
 import { clearAllTokens, readAuthToken } from "./core/auth";
+import { getLang, setLang, t } from "./core/i18n.js";
 import { BAG_DEFAULT_ITEMS } from "./content/bag-items.js";
 import {
   buildTabsNavMarkup,
@@ -39,20 +40,47 @@ const state = {
   loading: true,
   error: "",
   backendConnected: false,
+  backendChecked: false,
+  waking: false,
   lastUpdated: "",
   toast: "",
   isSubmitting: false
 };
 
-app.innerHTML = `
+let routeRoot;
+let backendPill;
+let wakeBanner;
+let toastEl;
+let showToast;
+
+function renderShell() {
+  app.innerHTML = `
   <main class="shell">
     <header class="topbar">
-      <div>
-        <h1>UpScholl Frontend</h1>
-        <p>Deprem hazırlık MVP: backend API ile senkron modüller.</p>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </span>
+        <div>
+          <h1>${t("app_title")}</h1>
+          <p>${t("app_subtitle")}</p>
+        </div>
       </div>
-      <span id="backend-pill" class="pill pill-offline">Backend: checking...</span>
+      <div class="topbar-actions">
+        <button id="lang-toggle" class="lang-toggle" type="button" aria-label="Change language">
+          ${getLang() === "tr" ? "EN" : "TR"}
+        </button>
+        <span id="backend-pill" class="pill pill-offline">${t("pill_checking")}</span>
+      </div>
     </header>
+
+    <div id="wake-banner" class="wake-banner" ${state.waking ? "" : "hidden"}>
+      <span class="spinner" aria-hidden="true"></span>
+      <span>${t("wake_banner")}</span>
+    </div>
 
     <nav class="tabs" aria-label="Main modules">
       ${buildTabsNavMarkup()}
@@ -63,11 +91,18 @@ app.innerHTML = `
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 `;
 
-const routeRoot = document.querySelector("#route-root");
-const backendPill = document.querySelector("#backend-pill");
-const toastEl = document.querySelector("#toast");
+  routeRoot = document.querySelector("#route-root");
+  backendPill = document.querySelector("#backend-pill");
+  wakeBanner = document.querySelector("#wake-banner");
+  toastEl = document.querySelector("#toast");
+  showToast = createToast(toastEl, () => state);
 
-const showToast = createToast(toastEl, () => state);
+  document.querySelector("#lang-toggle").addEventListener("click", () => {
+    setLang(getLang() === "tr" ? "en" : "tr");
+    renderShell();
+    renderCurrentRoute();
+  });
+}
 
 function resolveRouteFromHash() {
   const rawRoute = window.location.hash.replace("#", "").trim();
@@ -83,11 +118,16 @@ function renderTabState() {
 }
 
 function renderBackendPill() {
+  if (!state.backendChecked) {
+    backendPill.textContent = t("pill_checking");
+    backendPill.className = "pill pill-offline";
+    return;
+  }
   if (state.backendConnected) {
-    backendPill.textContent = "Backend: connected";
+    backendPill.textContent = t("pill_online");
     backendPill.className = "pill pill-online";
   } else {
-    backendPill.textContent = "Backend: offline";
+    backendPill.textContent = t("pill_offline");
     backendPill.className = "pill pill-offline";
   }
 }
@@ -97,24 +137,53 @@ function renderCurrentRoute() {
   renderTabState();
   const route = getRoute(state.route);
   route.render(routeRoot, state, {
-    showToast,
+    showToast: (message) => showToast(message),
     renderCurrentRoute,
     loadTasks,
     loadUserData: reloadUserData
   });
 }
 
-async function checkBackendHealth() {
+async function pingHealth(timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(`${BACKEND_ORIGIN}/health`);
-    if (!response.ok) {
-      state.backendConnected = false;
-      return;
-    }
-    state.backendConnected = true;
+    const response = await fetch(`${BACKEND_ORIGIN}/health`, {
+      signal: controller.signal
+    });
+    return response.ok;
   } catch (_error) {
-    state.backendConnected = false;
+    return false;
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+// Render free plan puts the backend to sleep after inactivity; the first
+// request can take up to ~60s. Retry with a visible banner instead of
+// blocking the page on a single failing request.
+async function checkBackendHealth({ retries = 15, delayMs = 4000 } = {}) {
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    const ok = await pingHealth();
+    if (ok) {
+      state.backendConnected = true;
+      state.backendChecked = true;
+      state.waking = false;
+      wakeBanner.hidden = true;
+      renderBackendPill();
+      return true;
+    }
+    state.backendConnected = false;
+    state.backendChecked = true;
+    state.waking = true;
+    wakeBanner.hidden = false;
+    renderBackendPill();
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  state.waking = false;
+  wakeBanner.hidden = true;
+  renderBackendPill();
+  return false;
 }
 
 async function checkSession() {
@@ -142,7 +211,7 @@ async function reloadUserData() {
     state.backendConnected = true;
     state.error = "";
   } catch (error) {
-    state.error = `Failed to sync data: ${error.message}`;
+    state.error = `${t("failed_sync")}: ${error.message}`;
     state.backendConnected = false;
     throw error;
   }
@@ -151,7 +220,7 @@ async function reloadUserData() {
 async function loadTasks() {
   if (!state.isAuthenticated) {
     state.loading = false;
-    state.error = "Login required to view tasks.";
+    state.error = t("login_required_tasks");
     state.tasks = [];
     state.backendConnected = true;
     renderCurrentRoute();
@@ -167,7 +236,7 @@ async function loadTasks() {
     state.backendConnected = true;
     state.lastUpdated = new Date().toLocaleTimeString();
   } catch (error) {
-    state.error = `Failed to load tasks: ${error.message}`;
+    state.error = `${t("failed_load_tasks")}: ${error.message}`;
     state.backendConnected = false;
   } finally {
     state.loading = false;
@@ -182,7 +251,17 @@ window.addEventListener("hashchange", () => {
 
 async function bootstrap() {
   state.route = resolveRouteFromHash();
-  await checkBackendHealth();
+  renderShell();
+  // Render immediately so the user never stares at a blank page while the
+  // backend wakes up from its free-tier sleep.
+  renderCurrentRoute();
+  const backendReady = await checkBackendHealth();
+  if (!backendReady) {
+    state.loading = false;
+    state.error = t("server_unreachable");
+    renderCurrentRoute();
+    return;
+  }
   await checkSession();
   if (state.isAuthenticated) {
     try {

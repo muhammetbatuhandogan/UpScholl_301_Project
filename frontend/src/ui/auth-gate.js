@@ -1,8 +1,10 @@
-export function renderAuthGate(routeRoot, moduleName) {
+import { t } from "../core/i18n.js";
+
+export function renderAuthGate(routeRoot, moduleTitle) {
   routeRoot.innerHTML = `
     <section class="card">
-      <h2>${moduleName}</h2>
-      <p class="muted">This module requires login. Open the <a href="#dashboard">Dashboard</a> tab to sign in with demo credentials or OTP.</p>
+      <h2>${moduleTitle}</h2>
+      <p class="muted">${t("auth_gate_msg")}</p>
     </section>
   `;
 }

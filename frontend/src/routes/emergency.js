@@ -1,10 +1,11 @@
+import { pick, t } from "../core/i18n.js";
 import { EMERGENCY_GUIDES } from "../content/emergency-guides.js";
 import { saveSosContacts, triggerSos } from "../services/user-data.js";
-import { isAuthenticated, renderAuthGate } from "../ui/auth-gate.js";
+import { isAuthenticated } from "../ui/auth-gate.js";
 
 export const emergencyRoute = {
   path: "emergency",
-  label: "Emergency",
+  labelKey: "nav_emergency",
 
   render(routeRoot, state, { showToast, renderCurrentRoute }) {
     const emergency = state.emergency;
@@ -18,43 +19,43 @@ export const emergencyRoute = {
     routeRoot.innerHTML = `
     <section class="layout">
       <section class="card">
-        <h2>Emergency Guide</h2>
-        <p class="muted">Offline-first emergency instructions (bundled content).</p>
+        <h2>${t("em_guide")}</h2>
+        <p class="muted">${t("em_guide_sub")}</p>
         <div class="task-actions">
-          <button class="guide-tab ${selectedGuide === "during" ? "guide-tab-active" : ""}" data-guide="during">During Quake</button>
-          <button class="guide-tab ${selectedGuide === "after" ? "guide-tab-active" : ""}" data-guide="after">After Quake</button>
-          <button class="guide-tab ${selectedGuide === "survival72h" ? "guide-tab-active" : ""}" data-guide="survival72h">First 72h</button>
-          <button class="guide-tab ${selectedGuide === "trapped" ? "guide-tab-active" : ""}" data-guide="trapped">If Trapped</button>
+          <button class="guide-tab ${selectedGuide === "during" ? "guide-tab-active" : ""}" data-guide="during">${t("g_during")}</button>
+          <button class="guide-tab ${selectedGuide === "after" ? "guide-tab-active" : ""}" data-guide="after">${t("g_after")}</button>
+          <button class="guide-tab ${selectedGuide === "survival72h" ? "guide-tab-active" : ""}" data-guide="survival72h">${t("g_72h")}</button>
+          <button class="guide-tab ${selectedGuide === "trapped" ? "guide-tab-active" : ""}" data-guide="trapped">${t("g_trapped")}</button>
         </div>
         <ul class="summary-list">
-          ${guideItems.map((item) => `<li>${item}</li>`).join("")}
+          ${guideItems.map((item) => `<li>${pick(item)}</li>`).join("")}
         </ul>
       </section>
 
       <section class="card card-side">
-        <h2>SOS Contacts</h2>
+        <h2>${t("sos_contacts")}</h2>
         ${
           authRequired
-            ? `<p class="muted">Login required to manage SOS contacts and send alerts. <a href="#dashboard">Dashboard</a></p>`
+            ? `<p class="muted">${t("sos_login_hint")}</p>`
             : `
         <form id="sos-form" class="form">
-          <label for="sos-name">Contact name</label>
+          <label for="sos-name">${t("contact_name")}</label>
           <input id="sos-name" name="contactName" maxlength="60" required />
-          <label for="sos-phone">Phone</label>
+          <label for="sos-phone">${t("phone")}</label>
           <input id="sos-phone" name="contactPhone" maxlength="20" required />
           <button id="sos-add-btn" type="submit" class="btn-primary" ${isAtMaxContacts ? "disabled" : ""}>
-            ${isAtMaxContacts ? "Max 3 contacts reached" : "Save Contacts"}
+            ${isAtMaxContacts ? t("max_contacts") : t("save_contacts")}
           </button>
         </form>
-        <p class="muted">Last SOS: ${emergency.lastSosAt || "-"}</p>
-        <button id="send-sos-btn" class="btn-danger">Send SOS</button>
+        <p class="muted">${t("last_sos")}: ${emergency.lastSosAt || "-"}</p>
+        <button id="send-sos-btn" class="btn-danger">${t("send_sos")}</button>
         `
         }
       </section>
     </section>
 
     <section class="card">
-      <h2>Contact List</h2>
+      <h2>${t("contact_list")}</h2>
       ${
         emergency.sosContacts.length
           ? `<ul id="sos-contacts-list" class="task-list">
@@ -70,7 +71,7 @@ export const emergencyRoute = {
                     authRequired
                       ? ""
                       : `<div class="task-actions">
-                    <button class="btn-danger" data-action="remove-contact">Remove</button>
+                    <button class="btn-danger" data-action="remove-contact">${t("remove")}</button>
                   </div>`
                   }
                 </li>
@@ -78,7 +79,7 @@ export const emergencyRoute = {
                 )
                 .join("")}
             </ul>`
-          : `<p class="muted">No SOS contacts added yet.</p>`
+          : `<p class="muted">${t("no_contacts")}</p>`
       }
     </section>
   `;
@@ -99,7 +100,7 @@ export const emergencyRoute = {
     sosForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (state.emergency.sosContacts.length >= 3) {
-        showToast("Maximum 3 SOS contacts allowed.");
+        showToast(t("max_contacts_toast"));
         return;
       }
 
@@ -107,7 +108,7 @@ export const emergencyRoute = {
       const name = String(formData.get("contactName") || "").trim();
       const phone = String(formData.get("contactPhone") || "").trim();
       if (!name || !phone) {
-        showToast("Name and phone are required.");
+        showToast(t("name_phone_required"));
         return;
       }
 
@@ -115,10 +116,10 @@ export const emergencyRoute = {
       try {
         state.emergency.sosContacts = await saveSosContacts(nextContacts);
         sosForm.reset();
-        showToast("SOS contacts saved.");
+        showToast(t("contacts_saved"));
         renderCurrentRoute();
       } catch (error) {
-        showToast(`Save failed: ${error.message}`);
+        showToast(`${t("save_failed")}: ${error.message}`);
       }
     });
 
@@ -134,20 +135,20 @@ export const emergencyRoute = {
         );
         try {
           state.emergency.sosContacts = await saveSosContacts(nextContacts);
-          showToast("SOS contact removed.");
+          showToast(t("contact_removed"));
           renderCurrentRoute();
         } catch (error) {
-          showToast(`Remove failed: ${error.message}`);
+          showToast(`${t("remove_failed")}: ${error.message}`);
         }
       });
     }
 
     sendSosButton.addEventListener("click", async () => {
       if (!state.emergency.sosContacts.length) {
-        showToast("Add at least one SOS contact first.");
+        showToast(t("add_contact_first"));
         return;
       }
-      const accepted = window.confirm("Send SOS alert to your contacts?");
+      const accepted = window.confirm(t("confirm_sos"));
       if (!accepted) return;
 
       let latitude = null;
@@ -167,11 +168,11 @@ export const emergencyRoute = {
       try {
         const eventData = await triggerSos(latitude, longitude);
         state.emergency.lastSosAt = new Date(eventData.created_at).toLocaleString();
-        showToast(`SOS sent (status: ${eventData.status}).`);
+        showToast(`${t("sos_sent")} ${eventData.status}).`);
         state.emergency.selectedGuide = "during";
         renderCurrentRoute();
       } catch (error) {
-        showToast(`SOS failed: ${error.message}`);
+        showToast(`${t("sos_failed")}: ${error.message}`);
       }
     });
   }
