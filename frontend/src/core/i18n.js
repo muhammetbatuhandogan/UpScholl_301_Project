@@ -261,7 +261,21 @@ const STRINGS = {
   onb_saved: {
     tr: "Başlangıç tamamlandı ve kaydedildi.",
     en: "Onboarding completed and saved."
-  }
+  },
+
+  // Recommended prep tasks & score breakdown
+  rec_tasks: { tr: "Önerilen Hazırlık Görevleri", en: "Recommended Prep Tasks" },
+  rec_tasks_sub: {
+    tr: "En önemli deprem hazırlık adımları. Listenize ekleyin; tamamladıkça hazırlık skorunuz artar.",
+    en: "The most important earthquake prep steps. Add them to your list; your readiness score grows as you complete them."
+  },
+  add_to_list: { tr: "Listeme Ekle", en: "Add to My List" },
+  complete_action: { tr: "Tamamla", en: "Complete" },
+  score_breakdown: { tr: "Skor dağılımı", en: "Score breakdown" },
+  br_bag: { tr: "Çanta", en: "Bag" },
+  br_tasks: { tr: "Görevler", en: "Tasks" },
+  br_base: { tr: "Profil", en: "Profile" },
+  br_family: { tr: "Aile", en: "Family" }
 };
 
 export function t(key) {

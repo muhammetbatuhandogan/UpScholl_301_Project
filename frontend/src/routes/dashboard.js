@@ -1,5 +1,6 @@
-import { t } from "../core/i18n.js";
-import { scoreColor } from "../core/score-engine.js";
+import { pick, t } from "../core/i18n.js";
+import { calculateReadinessScore, scoreColor } from "../core/score-engine.js";
+import { PREP_TASKS } from "../content/prep-tasks.js";
 import { STATUS_ORDER } from "../content/constants.js";
 import {
   loginWithPassword,
@@ -12,6 +13,30 @@ import { BACKEND_ORIGIN, request } from "../ui/api-client.js";
 
 function statusText(status) {
   return t(`status_${status}`);
+}
+
+function findRecTask(tasks, rec) {
+  return tasks.find(
+    (task) => task.title === rec.title.tr || task.title === rec.title.en
+  );
+}
+
+function buildRecListMarkup(state) {
+  return PREP_TASKS.map((rec) => {
+    const match = findRecTask(state.tasks, rec);
+    const isDone = Boolean(match && match.status === "done");
+    let action = `<button class="btn-primary btn-small" data-action="rec-add" data-rec-id="${rec.id}">${t("add_to_list")}</button>`;
+    if (match && !isDone) {
+      action = `<button class="btn-primary btn-small" data-action="rec-complete" data-rec-id="${rec.id}">${t("complete_action")}</button>`;
+    } else if (isDone) {
+      action = `<span class="badge badge-done">&#10003; ${t("status_done")}</span>`;
+    }
+    return `
+      <li class="task-item ${isDone ? "rec-done" : ""}">
+        <div class="task-title">${pick(rec.title)}</div>
+        <div class="task-actions">${action}</div>
+      </li>`;
+  }).join("");
 }
 
 function renderSummary(state, summaryList, lastUpdatedEl) {
@@ -32,6 +57,37 @@ function renderSummary(state, summaryList, lastUpdatedEl) {
     <li><strong>${statusText("done")}:</strong> ${counts.done || 0}</li>
   `;
   lastUpdatedEl.textContent = state.lastUpdated || "-";
+
+  const breakdownEl = document.querySelector("#score-breakdown");
+  if (!breakdownEl) return;
+  const computed = calculateReadinessScore({
+    onboarding: state.onboarding,
+    bagItems: state.bagItems,
+    tasks: state.tasks,
+    familyMembers: state.family.members,
+    familyGroup: state.familyGroup
+  });
+  const breakdown = computed.breakdown;
+  const rows = [
+    ["br_bag", breakdown.bagScore, 30],
+    ["br_tasks", breakdown.taskScore, 25],
+    ["br_base", breakdown.baseScore, 25],
+    ["br_family", breakdown.familyScore, 20]
+  ];
+  breakdownEl.innerHTML = `<div class="muted breakdown-heading">${t("score_breakdown")}</div>` + rows
+    .map(
+      ([key, value, weight]) => `
+      <div class="breakdown-row">
+        <div class="breakdown-label">
+          <span>${t(key)} <span class="muted">%${weight}</span></span>
+          <strong>${value}</strong>
+        </div>
+        <div class="progress-track slim">
+          <div class="progress-fill" style="width: ${value}%"></div>
+        </div>
+      </div>`
+    )
+    .join("");
 }
 
 function renderList(state, listStateEl, taskListEl) {
@@ -134,9 +190,18 @@ export const dashboardRoute = {
       <section class="card card-side">
         <h2>${t("summary")}</h2>
         <ul id="summary-list" class="summary-list"></ul>
+        <div id="score-breakdown" class="score-breakdown"></div>
         <div class="muted">${t("last_updated")}: <span id="last-updated">-</span></div>
         <a href="${BACKEND_ORIGIN}/health" target="_blank" rel="noreferrer">${t("open_health")}</a>
       </section>
+    </section>
+
+    <section class="card">
+      <h2>${t("rec_tasks")}</h2>
+      <p class="muted">${t("rec_tasks_sub")}</p>
+      <ul id="rec-list" class="task-list ${state.isAuthenticated ? "" : "disabled-form"}">
+        ${buildRecListMarkup(state)}
+      </ul>
     </section>
 
     <section class="card">
@@ -322,6 +387,7 @@ export const dashboardRoute = {
         await request(`/tasks/${id}`, { method: "DELETE" });
         await loadTasks();
         await syncScore(state);
+        renderCurrentRoute();
         showToast(t("task_deleted"));
       } catch (error) {
         showToast(`${t("delete_failed")}: ${error.message}`);
@@ -351,10 +417,50 @@ export const dashboardRoute = {
         });
         await loadTasks();
         await syncScore(state);
+        renderCurrentRoute();
         showToast(t("status_updated"));
       } catch (error) {
         showToast(`${t("update_failed")}: ${error.message}`);
       }
     });
+
+    const recList = document.querySelector("#rec-list");
+    if (recList) {
+      recList.addEventListener("click", async (event) => {
+        const action = event.target.getAttribute("data-action");
+        if (action !== "rec-add" && action !== "rec-complete") return;
+        if (!state.isAuthenticated) {
+          showToast(t("please_login"));
+          return;
+        }
+        const rec = PREP_TASKS.find(
+          (item) => item.id === event.target.getAttribute("data-rec-id")
+        );
+        if (!rec) return;
+        event.target.disabled = true;
+        try {
+          if (action === "rec-add") {
+            await request("/tasks", {
+              method: "POST",
+              body: JSON.stringify({ title: pick(rec.title), status: "todo" })
+            });
+            showToast(t("task_created"));
+          } else {
+            const match = findRecTask(state.tasks, rec);
+            if (!match) return;
+            await request(`/tasks/${match.id}`, {
+              method: "PUT",
+              body: JSON.stringify({ title: match.title, status: "done" })
+            });
+            showToast(t("status_updated"));
+          }
+          await loadTasks();
+          await syncScore(state);
+          renderCurrentRoute();
+        } catch (error) {
+          showToast(`${t("update_failed")}: ${error.message}`);
+        }
+      });
+    }
   }
 };

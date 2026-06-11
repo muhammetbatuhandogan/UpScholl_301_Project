@@ -650,3 +650,50 @@ select:focus {
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
+
+/* ---------- Recommended tasks & score breakdown ---------- */
+
+.btn-small {
+  margin-top: 0;
+  min-height: 34px;
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.rec-done {
+  opacity: 0.75;
+  background: rgba(5, 150, 105, 0.04);
+  border-color: rgba(5, 150, 105, 0.3);
+}
+
+.rec-done .task-title {
+  text-decoration: line-through;
+  color: var(--color-text-secondary);
+}
+
+.score-breakdown {
+  margin: 4px 0 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.breakdown-heading {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.breakdown-row {
+  display: grid;
+  gap: 5px;
+}
+
+.breakdown-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.progress-track.slim {
+  height: 8px;
+}
