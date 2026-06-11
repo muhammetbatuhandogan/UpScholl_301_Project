@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import { saveOnboarding } from '@/lib/api';
-import type { Onboarding } from '@/lib/score-engine';
-import { Button, Card, Field, Label, Muted, SectionTitle } from '@/ui/components';
-import { palette, radius, space } from '@/ui/theme';
+import { calculateInitialScore, type Onboarding } from '@/lib/score-engine';
+import {
+  Button,
+  Card,
+  Field,
+  Label,
+  Muted,
+  ProgressBar,
+  ScreenHeader,
+  SectionTitle,
+  Segmented,
+} from '@/ui/components';
+import { palette, space } from '@/ui/theme';
 
 const FAMILY_SIZES = ['1', '2', '3', '4', '5+'];
 const YES_NO = [
@@ -23,11 +34,17 @@ export default function OnboardingScreen() {
     setForm(data.onboarding);
   }, [data.onboarding]);
 
+  const previewScore = calculateInitialScore(form);
+
   function update<K extends keyof Onboarding>(key: K, value: Onboarding[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   async function onSave() {
+    if (!form.region.trim()) {
+      Alert.alert('Bölge gerekli', 'Yaşadığın şehri veya bölgeyi gir.');
+      return;
+    }
     setSaving(true);
     try {
       const saved = await saveOnboarding({ ...form, completed: true });
@@ -42,97 +59,66 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Card>
-          <SectionTitle>Profil</SectionTitle>
-          <Muted>Bu bilgiler hazırlık skorunun temelini belirler.</Muted>
+        <ScreenHeader title="Profil" subtitle="Bu bilgiler hazırlık skorunun temelini belirler." />
 
-          <Label>Bölge / Şehir</Label>
-          <Field
-            value={form.region}
-            onChangeText={(v) => update('region', v)}
-            placeholder="Örn. İstanbul"
-          />
+        <Animated.View entering={FadeInDown.duration(400)}>
+          <Card>
+            <SectionTitle>Temel skor önizleme</SectionTitle>
+            <View style={styles.previewRow}>
+              <Text style={styles.previewScore}>{previewScore}</Text>
+              <Text style={styles.previewMax}>/75</Text>
+            </View>
+            <ProgressBar value={(previewScore / 75) * 100} height={10} />
+            <Muted>Bilgileri doldurdukça önizleme anında güncellenir.</Muted>
+          </Card>
+        </Animated.View>
 
-          <Label>Hane büyüklüğü</Label>
-          <Segmented
-            options={FAMILY_SIZES.map((s) => ({ value: s, label: s }))}
-            value={form.familySize}
-            onChange={(v) => update('familySize', v)}
-          />
+        <Animated.View entering={FadeInDown.duration(400).delay(80)}>
+          <Card>
+            <SectionTitle>Hane bilgileri</SectionTitle>
 
-          <Label>Evde çocuk var mı?</Label>
-          <Segmented options={YES_NO} value={form.hasChildren} onChange={(v) => update('hasChildren', v)} />
+            <Label>Bölge / Şehir</Label>
+            <Field
+              value={form.region}
+              onChangeText={(v) => update('region', v)}
+              placeholder="Örn. İstanbul"
+            />
 
-          <Label>Evde yaşlı birey var mı?</Label>
-          <Segmented options={YES_NO} value={form.hasElderly} onChange={(v) => update('hasElderly', v)} />
+            <Label>Hane büyüklüğü</Label>
+            <Segmented
+              options={FAMILY_SIZES.map((s) => ({ value: s, label: s }))}
+              value={form.familySize}
+              onChange={(v) => update('familySize', v)}
+            />
 
-          <Button title="Kaydet" onPress={onSave} loading={saving} />
-        </Card>
+            <Label>Evde çocuk var mı?</Label>
+            <Segmented
+              options={YES_NO}
+              value={form.hasChildren}
+              onChange={(v) => update('hasChildren', v)}
+            />
+
+            <Label>Evde yaşlı veya engelli birey var mı?</Label>
+            <Segmented
+              options={YES_NO}
+              value={form.hasElderly}
+              onChange={(v) => update('hasElderly', v)}
+            />
+
+            <Button title="Kaydet" onPress={onSave} loading={saving} />
+          </Card>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Segmented({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: string; label: string }[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <View style={styles.segmented}>
-      {options.map((opt) => {
-        const active = opt.value === value;
-        return (
-          <Pressable
-            key={opt.value}
-            onPress={() => onChange(opt.value)}
-            style={[styles.segment, active && styles.segmentActive]}
-          >
-            <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{opt.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: palette.bg,
-  },
-  content: {
-    padding: space.lg,
-    gap: space.lg,
-  },
-  segmented: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
-  },
-  segment: {
-    paddingVertical: space.sm,
-    paddingHorizontal: space.lg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.card,
-  },
-  segmentActive: {
-    backgroundColor: palette.primary,
-    borderColor: palette.primary,
-  },
-  segmentText: {
-    color: palette.text,
-    fontWeight: '600',
-  },
-  segmentTextActive: {
-    color: palette.primaryText,
-  },
+  safe: { flex: 1, backgroundColor: palette.bg },
+  content: { padding: space.lg, gap: space.lg, paddingBottom: space.xl },
+  previewRow: { flexDirection: 'row', alignItems: 'baseline' },
+  previewScore: { fontSize: 44, fontWeight: '800', color: palette.primary, letterSpacing: -1 },
+  previewMax: { fontSize: 18, fontWeight: '600', color: palette.muted },
 });

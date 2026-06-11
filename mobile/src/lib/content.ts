@@ -67,3 +67,35 @@ export const PREP_TASKS: PrepTask[] = [
     titleEn: 'Get mandatory earthquake insurance (DASK)',
   },
 ];
+
+export type GuideKey = 'during' | 'after' | 'survival72h' | 'trapped';
+
+export const GUIDE_TABS: { key: GuideKey; label: string }[] = [
+  { key: 'during', label: 'Deprem Anında' },
+  { key: 'after', label: 'Sonrası' },
+  { key: 'survival72h', label: 'İlk 72 Saat' },
+  { key: 'trapped', label: 'Enkaz Altında' },
+];
+
+export const EMERGENCY_GUIDES: Record<GuideKey, string[]> = {
+  during: [
+    'Çök, kapan, tutun; pencerelerden uzak durun.',
+    'Sarsıntı durana kadar başınızı ve boynunuzu koruyun.',
+    'Sarsıntı sırasında asansör kullanmayın.',
+  ],
+  after: [
+    'Yaralanmaları kontrol edin, gerekirse ilk yardım uygulayın.',
+    'Kaçak riski varsa gaz ve elektriği kapatın.',
+    'Sakin bir şekilde güvenli toplanma alanına gidin.',
+  ],
+  survival72h: [
+    'Acil durum çantasındaki malzemeleri planlı kullanın.',
+    'Temiz suyu koruyun, tıbbi ihtiyaçlara öncelik verin.',
+    'Güncel bilgi için resmi acil durum kanallarını takip edin.',
+  ],
+  trapped: [
+    'Sakin kalın ve enerjinizi koruyun.',
+    'Konumunuzu bildirmek için düdük çalın veya ritmik vurun.',
+    'Mümkünse ağzınızı ve burnunuzu tozdan koruyun.',
+  ],
+};

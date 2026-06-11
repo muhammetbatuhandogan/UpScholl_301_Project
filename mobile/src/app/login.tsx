@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   Alert,
@@ -8,12 +9,13 @@ import {
   Text,
   View,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import { requestOtp } from '@/lib/api';
-import { Button, Card, Field, Label, Muted, SectionTitle } from '@/ui/components';
-import { palette, space } from '@/ui/theme';
+import { Button, Card, Chip, Field, Label, Muted, SectionTitle } from '@/ui/components';
+import { palette, shadow, space } from '@/ui/theme';
 
 export default function LoginScreen() {
   const { loginPassword, loginOtp } = useAuth();
@@ -87,56 +89,66 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.header}>
-            <Text style={styles.brand}>UpScholl</Text>
-            <Muted>Deprem hazırlık uygulaması</Muted>
-          </View>
+          <Animated.View entering={FadeInDown.duration(450)} style={styles.header}>
+            <View style={styles.brandMark}>
+              <Ionicons name="shield-checkmark" size={34} color="#fff" />
+            </View>
+            <Text style={styles.brand}>Deprem Hazırlık</Text>
+            <Muted>Ailenle birlikte depreme hazır ol.</Muted>
+          </Animated.View>
 
-          <Card>
-            <SectionTitle>Giriş (Demo)</SectionTitle>
-            <Label>Kullanıcı adı</Label>
-            <Field
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Label>Parola</Label>
-            <Field value={password} onChangeText={setPassword} secureTextEntry />
-            <Button title="Giriş yap" onPress={handlePasswordLogin} loading={loadingPassword} />
-          </Card>
+          <Animated.View entering={FadeInDown.duration(450).delay(100)}>
+            <Card>
+              <View style={styles.cardTitleRow}>
+                <SectionTitle>Giriş</SectionTitle>
+                <Chip label="Demo" />
+              </View>
+              <Label>Kullanıcı adı</Label>
+              <Field
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <Label>Parola</Label>
+              <Field value={password} onChangeText={setPassword} secureTextEntry />
+              <Button title="Giriş yap" onPress={handlePasswordLogin} loading={loadingPassword} />
+            </Card>
+          </Animated.View>
 
-          <Card>
-            <SectionTitle>OTP ile giriş</SectionTitle>
-            <Label>Telefon (E.164)</Label>
-            <Field
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="+905551234567"
-              keyboardType="phone-pad"
-              autoCapitalize="none"
-            />
-            <Button
-              title={otpSent ? 'Kodu tekrar gönder' : 'OTP gönder'}
-              onPress={handleSendOtp}
-              variant="ghost"
-              loading={loadingOtp && !otpSent}
-            />
-            {otpSent ? (
-              <>
-                <Label>6 haneli kod</Label>
-                <Field
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  placeholder="------"
-                />
-                {debugCode ? <Muted>Debug kod (yalnızca test): {debugCode}</Muted> : null}
-                <Button title="OTP doğrula" onPress={handleVerifyOtp} loading={loadingOtp} />
-              </>
-            ) : null}
-          </Card>
+          <Animated.View entering={FadeInDown.duration(450).delay(200)}>
+            <Card>
+              <SectionTitle>OTP ile giriş</SectionTitle>
+              <Label>Telefon (E.164)</Label>
+              <Field
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="+905551234567"
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+              />
+              <Button
+                title={otpSent ? 'Kodu tekrar gönder' : 'OTP gönder'}
+                onPress={handleSendOtp}
+                variant="ghost"
+                loading={loadingOtp && !otpSent}
+              />
+              {otpSent ? (
+                <>
+                  <Label>6 haneli kod</Label>
+                  <Field
+                    value={code}
+                    onChangeText={setCode}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    placeholder="------"
+                  />
+                  {debugCode ? <Muted>Debug kod (yalnızca test): {debugCode}</Muted> : null}
+                  <Button title="OTP doğrula" onPress={handleVerifyOtp} loading={loadingOtp} />
+                </>
+              ) : null}
+            </Card>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -144,24 +156,19 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: palette.bg,
+  safe: { flex: 1, backgroundColor: palette.bg },
+  flex: { flex: 1 },
+  content: { padding: space.lg, gap: space.lg, paddingBottom: space.xl },
+  header: { alignItems: 'center', paddingVertical: space.xl, gap: space.sm },
+  brandMark: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    backgroundColor: palette.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadow.hero,
   },
-  flex: {
-    flex: 1,
-  },
-  content: {
-    padding: space.lg,
-    gap: space.lg,
-  },
-  header: {
-    paddingVertical: space.lg,
-    gap: space.xs,
-  },
-  brand: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: palette.text,
-  },
+  brand: { fontSize: 28, fontWeight: '800', color: palette.text, letterSpacing: -0.5 },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
@@ -13,13 +14,26 @@ import {
   joinFamilyGroup,
   leaveFamilyGroup,
 } from '@/lib/api';
-import { Button, Card, Field, Label, Muted, SectionTitle } from '@/ui/components';
-import { palette, radius, space } from '@/ui/theme';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  Field,
+  Label,
+  Muted,
+  ScreenHeader,
+  SectionTitle,
+  Segmented,
+} from '@/ui/components';
+import { palette, radius, scoreTone, space } from '@/ui/theme';
+
+const ROLES = ['Ebeveyn', 'Çocuk', 'Yaşlı', 'Akraba', 'Üye'];
 
 export default function FamilyScreen() {
   const { data, patchData, recomputeScore } = useAuth();
   const [name, setName] = useState('');
-  const [role, setRole] = useState('');
+  const [role, setRole] = useState('Üye');
   const [joinCode, setJoinCode] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -40,11 +54,15 @@ export default function FamilyScreen() {
       Alert.alert('İsim gerekli', 'Üye adını girin.');
       return;
     }
+    if (members.length >= 5) {
+      Alert.alert('Sınır', 'En fazla 5 üye eklenebilir.');
+      return;
+    }
     setBusy(true);
     try {
-      await createFamilyMember({ name: name.trim(), role: role.trim() || 'Üye', score: 50 });
+      await createFamilyMember({ name: name.trim(), role, score: 50 });
       setName('');
-      setRole('');
+      setRole('Üye');
       await refreshFamily();
     } catch (error) {
       Alert.alert('Eklenemedi', (error as Error).message);
@@ -53,16 +71,25 @@ export default function FamilyScreen() {
     }
   }
 
-  async function onDeleteMember(id: number) {
-    setBusy(true);
-    try {
-      await deleteFamilyMember(id);
-      await refreshFamily();
-    } catch (error) {
-      Alert.alert('Silinemedi', (error as Error).message);
-    } finally {
-      setBusy(false);
-    }
+  function onDeleteMember(id: number, memberName: string) {
+    Alert.alert('Üyeyi sil', `${memberName} listeden kaldırılsın mı?`, [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Sil',
+        style: 'destructive',
+        onPress: async () => {
+          setBusy(true);
+          try {
+            await deleteFamilyMember(id);
+            await refreshFamily();
+          } catch (error) {
+            Alert.alert('Silinemedi', (error as Error).message);
+          } finally {
+            setBusy(false);
+          }
+        },
+      },
+    ]);
   }
 
   async function onCreateGroup() {
@@ -107,84 +134,109 @@ export default function FamilyScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Card>
-          <SectionTitle>Aile üyeleri</SectionTitle>
-          {members.length === 0 ? (
-            <Muted>Henüz üye yok.</Muted>
-          ) : (
-            members.map((member) => (
-              <View key={member.id} style={styles.memberRow}>
-                <View style={styles.flex}>
-                  <Text style={styles.memberName}>{member.name}</Text>
-                  <Text style={styles.memberMeta}>
-                    {member.role} · skor {member.score}
+        <ScreenHeader title="Aile" subtitle="Hane üyelerini yönet, aile grubunla skoru paylaş." />
+
+        <Animated.View entering={FadeInDown.duration(400)}>
+          <Card>
+            <SectionTitle>Hane üyeleri ({members.length}/5)</SectionTitle>
+            {members.length === 0 ? (
+              <Muted>Henüz üye yok. Aşağıdan ilk üyeni ekle.</Muted>
+            ) : (
+              members.map((member) => {
+                const tone = scoreTone(member.score);
+                return (
+                  <View key={member.id} style={styles.memberRow}>
+                    <Avatar name={member.name} color={tone.color} />
+                    <View style={styles.flex}>
+                      <Text style={styles.memberName}>{member.name}</Text>
+                      <View style={styles.memberMetaRow}>
+                        <Badge label={member.role} />
+                        <Badge label={`Skor ${member.score}`} color={tone.color} soft={tone.soft} />
+                      </View>
+                    </View>
+                    <Pressable
+                      onPress={() => onDeleteMember(member.id, member.name)}
+                      disabled={busy}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="trash-outline" size={21} color={palette.danger} />
+                    </Pressable>
+                  </View>
+                );
+              })
+            )}
+            <Label>Yeni üye</Label>
+            <Field value={name} onChangeText={setName} placeholder="Ad" />
+            <Label>Rol</Label>
+            <Segmented
+              options={ROLES.map((r) => ({ value: r, label: r }))}
+              value={role}
+              onChange={setRole}
+            />
+            <Button title="Üye ekle" onPress={onAddMember} loading={busy} />
+          </Card>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(400).delay(80)}>
+          <Card>
+            <SectionTitle>Aile grubu</SectionTitle>
+            {group ? (
+              <>
+                <Muted>Davet kodunu paylaş, ailen kendi cihazından katılsın.</Muted>
+                <View style={styles.codeBox}>
+                  <Text style={styles.code}>{group.invite_code}</Text>
+                  <Muted>Davet kodu</Muted>
+                </View>
+                <View style={styles.groupScoreRow}>
+                  <Ionicons name="people" size={18} color={palette.primary} />
+                  <Text style={styles.groupScoreText}>
+                    Ortalama aile skoru: {Math.round(group.family_average_score)}
                   </Text>
                 </View>
-                <Pressable onPress={() => onDeleteMember(member.id)} disabled={busy}>
-                  <Ionicons name="trash" size={22} color={palette.danger} />
-                </Pressable>
-              </View>
-            ))
-          )}
-          <Label>Yeni üye</Label>
-          <Field value={name} onChangeText={setName} placeholder="Ad" />
-          <Field value={role} onChangeText={setRole} placeholder="Rol (ör. Anne)" />
-          <Button title="Üye ekle" onPress={onAddMember} loading={busy} variant="ghost" />
-        </Card>
-
-        <Card>
-          <SectionTitle>Aile grubu</SectionTitle>
-          {group ? (
-            <>
-              <Muted>Davet kodu</Muted>
-              <Text style={styles.code}>{group.invite_code}</Text>
-              <Muted>Ortalama aile skoru: {Math.round(group.family_average_score)}</Muted>
-              {(group.members || []).map((m: any) => (
-                <View key={m.user_id ?? m.username} style={styles.memberRow}>
-                  <Text style={styles.memberName}>{m.username}</Text>
-                  <Text style={styles.memberMeta}>skor {m.score}</Text>
-                </View>
-              ))}
-              <Button title="Gruptan ayrıl" onPress={onLeaveGroup} loading={busy} variant="danger" />
-            </>
-          ) : (
-            <>
-              <Muted>Bir aile grubu oluştur veya davet koduyla katıl.</Muted>
-              <Button title="Grup oluştur" onPress={onCreateGroup} loading={busy} />
-              <Label>Davet kodu ile katıl</Label>
-              <Field
-                value={joinCode}
-                onChangeText={setJoinCode}
-                placeholder="Davet kodu"
-                autoCapitalize="characters"
-              />
-              <Button title="Gruba katıl" onPress={onJoinGroup} loading={busy} variant="ghost" />
-            </>
-          )}
-        </Card>
+                {(group.members || []).map((m: any) => (
+                  <View key={m.user_id ?? m.username} style={styles.memberRow}>
+                    <Avatar name={m.username} />
+                    <Text style={[styles.memberName, styles.flex]}>{m.username}</Text>
+                    <Badge
+                      label={`Skor ${m.total_score ?? m.score ?? 0}`}
+                      color={scoreTone(m.total_score ?? m.score ?? 0).color}
+                      soft={scoreTone(m.total_score ?? m.score ?? 0).soft}
+                    />
+                  </View>
+                ))}
+                <Button title="Gruptan ayrıl" onPress={onLeaveGroup} loading={busy} variant="danger" />
+              </>
+            ) : (
+              <>
+                <Muted>Bir aile grubu oluştur veya davet koduyla katıl.</Muted>
+                <Button title="Grup oluştur" onPress={onCreateGroup} loading={busy} />
+                <Label>Davet kodu ile katıl</Label>
+                <Field
+                  value={joinCode}
+                  onChangeText={setJoinCode}
+                  placeholder="6 haneli kod"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+                <Button title="Gruba katıl" onPress={onJoinGroup} loading={busy} variant="ghost" />
+              </>
+            )}
+          </Card>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: palette.bg,
-  },
-  content: {
-    padding: space.lg,
-    gap: space.lg,
-  },
-  flex: {
-    flex: 1,
-  },
+  safe: { flex: 1, backgroundColor: palette.bg },
+  content: { padding: space.lg, gap: space.lg, paddingBottom: space.xl },
+  flex: { flex: 1 },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: space.md,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
@@ -192,19 +244,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
   },
-  memberName: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '600',
+  memberName: { color: palette.text, fontSize: 15, fontWeight: '600' },
+  memberMetaRow: { flexDirection: 'row', gap: space.xs, marginTop: 4 },
+  codeBox: {
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: space.md,
+    borderRadius: radius.md,
+    backgroundColor: palette.primarySoft,
+    borderWidth: 1,
+    borderColor: 'rgba(37,99,235,0.2)',
+    borderStyle: 'dashed',
   },
-  memberMeta: {
-    color: palette.muted,
-    fontSize: 12,
-  },
-  code: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: palette.primary,
-    letterSpacing: 2,
-  },
+  code: { fontSize: 30, fontWeight: '800', color: palette.primary, letterSpacing: 6 },
+  groupScoreRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  groupScoreText: { color: palette.text, fontSize: 14.5, fontWeight: '600' },
 });

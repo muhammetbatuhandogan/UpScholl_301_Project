@@ -13,7 +13,20 @@ export type Task = { id: number; title: string; status: string };
 
 export type FamilyMember = { id: number; name: string; role: string; score: number };
 
-export type FamilyGroup = { family_average_score: number } | null;
+export type FamilyGroupMember = {
+  user_id?: number;
+  username: string;
+  total_score?: number;
+  score?: number;
+  is_leader?: boolean;
+};
+
+export type FamilyGroup = {
+  family_average_score: number;
+  invite_code?: string;
+  weakest_user_id?: number;
+  members?: FamilyGroupMember[];
+} | null;
 
 export type ScoreBreakdown = {
   bagScore: number;
