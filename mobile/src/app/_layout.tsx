@@ -1,14 +1,14 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import { palette } from '@/ui/theme';
 
 function RootNavigator() {
-  const { isReady, isAuthenticated } = useAuth();
+  const { isReady, isAuthenticated, isWaking } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -26,6 +26,11 @@ function RootNavigator() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={palette.primary} />
+        {isWaking ? (
+          <Text style={styles.wakeText}>
+            Sunucu uyandırılıyor, ilk açılış bir dakikaya kadar sürebilir...
+          </Text>
+        ) : null}
       </View>
     );
   }
@@ -55,5 +60,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: palette.bg,
+    gap: 16,
+    paddingHorizontal: 32,
+  },
+  wakeText: {
+    textAlign: 'center',
+    color: palette.muted,
+    fontSize: 14,
   },
 });

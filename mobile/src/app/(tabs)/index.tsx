@@ -1,17 +1,32 @@
 import { useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
+import { createTask, fetchTasks, updateTask } from '@/lib/api';
+import { PREP_TASKS, type PrepTask } from '@/lib/content';
 import { registerForPushNotifications } from '@/lib/notifications';
-import { scoreColor } from '@/lib/score-engine';
+import { scoreColor, type Task } from '@/lib/score-engine';
 import { Button, Card, Muted, SectionTitle } from '@/ui/components';
-import { palette, space } from '@/ui/theme';
+import { palette, radius, space } from '@/ui/theme';
+
+function findRecTask(tasks: Task[], rec: PrepTask): Task | undefined {
+  return tasks.find((task) => task.title === rec.title || task.title === rec.titleEn);
+}
 
 export default function DashboardScreen() {
-  const { username, data, reload, logout } = useAuth();
+  const { username, data, reload, logout, patchData, recomputeScore } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [registeringPush, setRegisteringPush] = useState(false);
+  const [busyRecId, setBusyRecId] = useState<string | null>(null);
 
   const score = data.score.total_score ?? 0;
   const breakdown = data.score.breakdown;
@@ -33,6 +48,26 @@ export default function DashboardScreen() {
       Alert.alert('Yenilenemedi', (error as Error).message);
     } finally {
       setRefreshing(false);
+    }
+  }
+
+  async function onRecAction(rec: PrepTask) {
+    if (busyRecId) return;
+    setBusyRecId(rec.id);
+    try {
+      const match = findRecTask(data.tasks, rec);
+      if (!match) {
+        await createTask(rec.title);
+      } else if (match.status !== 'done') {
+        await updateTask(match.id, match.title, 'done');
+      }
+      const tasks = await fetchTasks();
+      patchData({ tasks });
+      await recomputeScore();
+    } catch (error) {
+      Alert.alert('Hata', (error as Error).message);
+    } finally {
+      setBusyRecId(null);
     }
   }
 
@@ -71,6 +106,44 @@ export default function DashboardScreen() {
           ) : (
             <Muted>Skor kırılımı için modülleri doldur.</Muted>
           )}
+        </Card>
+
+        <Card>
+          <SectionTitle>Önerilen hazırlık görevleri</SectionTitle>
+          <Muted>
+            En önemli adımlar. Listene ekle; tamamladıkça hazırlık skorun artar.
+          </Muted>
+          <View style={styles.recList}>
+            {PREP_TASKS.map((rec) => {
+              const match = findRecTask(data.tasks, rec);
+              const isDone = Boolean(match && match.status === 'done');
+              const isBusy = busyRecId === rec.id;
+              return (
+                <View key={rec.id} style={[styles.recRow, isDone && styles.recRowDone]}>
+                  <Text style={[styles.recTitle, isDone && styles.recTitleDone]}>
+                    {rec.title}
+                  </Text>
+                  {isDone ? (
+                    <Text style={styles.recDoneBadge}>✓</Text>
+                  ) : (
+                    <Pressable
+                      onPress={() => onRecAction(rec)}
+                      disabled={isBusy}
+                      style={({ pressed }) => [
+                        styles.recButton,
+                        match ? styles.recButtonComplete : null,
+                        (pressed || isBusy) && styles.recButtonPressed,
+                      ]}
+                    >
+                      <Text style={styles.recButtonText}>
+                        {isBusy ? '...' : match ? 'Tamamla' : 'Ekle'}
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })}
+          </View>
         </Card>
 
         <Card>
@@ -152,5 +225,50 @@ const styles = StyleSheet.create({
     color: palette.muted,
     fontSize: 15,
     fontWeight: '600',
+  },
+  recList: {
+    gap: space.sm,
+    marginTop: space.sm,
+  },
+  recRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.sm,
+    paddingVertical: 6,
+  },
+  recRowDone: {
+    opacity: 0.6,
+  },
+  recTitle: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 14.5,
+  },
+  recTitleDone: {
+    textDecorationLine: 'line-through',
+    color: palette.muted,
+  },
+  recDoneBadge: {
+    color: palette.success,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  recButton: {
+    backgroundColor: palette.primary,
+    borderRadius: radius.md,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+  },
+  recButtonComplete: {
+    backgroundColor: palette.success,
+  },
+  recButtonPressed: {
+    opacity: 0.6,
+  },
+  recButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

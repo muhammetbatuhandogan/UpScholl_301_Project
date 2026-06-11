@@ -18,6 +18,7 @@ import {
   type ScoreState,
   type UserData,
 } from '@/lib/api';
+import { ApiError, wakeBackend } from '@/lib/api-client';
 import { clearTokens, readAccessToken, writeAccessToken, writeRefreshToken } from '@/lib/auth';
 import { BAG_DEFAULT_ITEMS, type BagItem } from '@/lib/content';
 import type { FamilyGroup, FamilyMember, Onboarding, Task } from '@/lib/score-engine';
@@ -44,6 +45,7 @@ const EMPTY_DATA: UserData = {
 
 type AuthContextValue = {
   isReady: boolean;
+  isWaking: boolean;
   isAuthenticated: boolean;
   username: string;
   data: UserData;
@@ -59,6 +61,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
+  const [isWaking, setIsWaking] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [data, setData] = useState<UserData>(EMPTY_DATA);
@@ -128,15 +131,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
+      // Wake the backend first (Render free tier sleeps); otherwise the
+      // initial requests hang or fail and the user gets logged out.
+      const awake = await wakeBackend(() => setIsWaking(true));
+      setIsWaking(false);
       const token = await readAccessToken();
-      if (token) {
+      if (awake && token) {
         try {
           const me = await fetchMe();
           setIsAuthenticated(true);
           setUsername(me.username);
           await reload();
-        } catch {
-          await clearTokens();
+        } catch (error) {
+          // Only drop the session on real auth errors, never on network issues.
+          if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+            await clearTokens();
+          }
         }
       }
       setIsReady(true);
@@ -146,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       isReady,
+      isWaking,
       isAuthenticated,
       username,
       data,
@@ -158,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }),
     [
       isReady,
+      isWaking,
       isAuthenticated,
       username,
       data,

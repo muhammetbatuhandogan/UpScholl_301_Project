@@ -179,6 +179,20 @@ export async function fetchTasks(): Promise<Task[]> {
   return Array.isArray(data.items) ? data.items : [];
 }
 
+export async function createTask(title: string, status = 'todo'): Promise<Task> {
+  return request<Task>('/tasks', {
+    method: 'POST',
+    body: JSON.stringify({ title, status }),
+  });
+}
+
+export async function updateTask(id: number, title: string, status: string): Promise<Task> {
+  return request<Task>(`/tasks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title, status }),
+  });
+}
+
 export async function registerPushDevice(token: string, platform: string) {
   return request('/notifications/devices', {
     method: 'POST',
