@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.config import get_cors_origins, get_enable_notification_scheduler
 from app.db.session import get_db
 from app.routers.analytics_router import router as analytics_router
+from app.routers.assistant_router import router as assistant_router
 from app.routers.auth_router import router as auth_router
 from app.routers.bag_router import router as bag_router
 from app.routers.emergency_router import router as emergency_router
@@ -70,6 +71,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(assistant_router)
 app.include_router(auth_router)
 app.include_router(otp_router)
 app.include_router(tasks_router)

@@ -1,4 +1,5 @@
 import { t } from "../core/i18n.js";
+import { assistantRoute } from "./assistant.js";
 import { bagRoute } from "./bag.js";
 import { dashboardRoute } from "./dashboard.js";
 import { emergencyRoute } from "./emergency.js";
@@ -10,7 +11,8 @@ export const routes = [
   onboardingRoute,
   bagRoute,
   familyRoute,
-  emergencyRoute
+  emergencyRoute,
+  assistantRoute
 ];
 
 export const ROUTE_PATHS = routes.map((r) => r.path);

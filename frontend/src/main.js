@@ -37,6 +37,12 @@ const state = {
   },
   score: { total_score: 0, breakdown: null, updated_at: null },
   tasks: [],
+  assistant: {
+    messages: [],
+    insights: null,
+    insightsLoading: false,
+    chatLoading: false
+  },
   loading: true,
   error: "",
   backendConnected: false,

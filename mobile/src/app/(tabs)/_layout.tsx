@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import type { ColorValue } from 'react-native';
 
 import { palette } from '@/ui/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 function tabIcon(focusedName: IoniconName, outlineName: IoniconName) {
-  return ({ color, size, focused }: { color: string; size: number; focused: boolean }) => (
-    <Ionicons name={focused ? focusedName : outlineName} size={size} color={color} />
+  return ({ color, size, focused }: { color: ColorValue; size: number; focused: boolean }) => (
+    <Ionicons name={focused ? focusedName : outlineName} size={size} color={color as string} />
   );
 }
 
@@ -39,6 +40,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="bag"
         options={{ title: 'Çanta', tabBarIcon: tabIcon('bag-handle', 'bag-handle-outline') }}
+      />
+      <Tabs.Screen
+        name="assistant"
+        options={{ title: 'Asistan', tabBarIcon: tabIcon('sparkles', 'sparkles-outline') }}
       />
       <Tabs.Screen
         name="family"

@@ -193,6 +193,30 @@ export async function updateTask(id: number, title: string, status: string): Pro
   });
 }
 
+export type AssistantPlanItem = { title: string; why?: string; priority?: string };
+export type AssistantInsights = { coaching: string; plan: AssistantPlanItem[] };
+export type AssistantMessage = { role: 'user' | 'assistant'; content: string };
+
+export async function fetchAssistantInsights(
+  context: Record<string, unknown>,
+): Promise<AssistantInsights> {
+  return request<AssistantInsights>('/assistant/insights', {
+    method: 'POST',
+    body: JSON.stringify({ context }),
+  });
+}
+
+export async function sendAssistantChat(
+  messages: AssistantMessage[],
+  context: Record<string, unknown>,
+): Promise<string> {
+  const data = await request<{ reply: string }>('/assistant/chat', {
+    method: 'POST',
+    body: JSON.stringify({ messages, context }),
+  });
+  return data.reply;
+}
+
 export async function registerPushDevice(token: string, platform: string) {
   return request('/notifications/devices', {
     method: 'POST',

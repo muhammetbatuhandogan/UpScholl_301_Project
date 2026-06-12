@@ -275,7 +275,30 @@ const STRINGS = {
   br_bag: { tr: "Çanta", en: "Bag" },
   br_tasks: { tr: "Görevler", en: "Tasks" },
   br_base: { tr: "Profil", en: "Profile" },
-  br_family: { tr: "Aile", en: "Family" }
+  br_family: { tr: "Aile", en: "Family" },
+
+  // AI assistant
+  nav_assistant: { tr: "Asistan", en: "Assistant" },
+  ai_plan_title: { tr: "Kişisel Hazırlık Planın", en: "Your Personal Prep Plan" },
+  ai_plan_hint: {
+    tr: "Yapay zeka; skorunu, çantanı ve profilini analiz edip sana özel bir hazırlık planı çıkarır.",
+    en: "AI analyzes your score, bag and profile to build a prep plan tailored to you."
+  },
+  ai_plan_generate: { tr: "Planımı Oluştur", en: "Generate My Plan" },
+  ai_plan_refresh: { tr: "Planı Yenile", en: "Refresh Plan" },
+  ai_chat_title: { tr: "Hazırlık Asistanı", en: "Prep Assistant" },
+  ai_chat_hint: {
+    tr: "Deprem hazırlığıyla ilgili her şeyi sorabilirsin. Örn: \"Çocuklu bir aile için çantada ekstra ne olmalı?\"",
+    en: "Ask anything about earthquake prep. E.g. \"What extra items should a family with kids pack?\""
+  },
+  ai_chat_placeholder: { tr: "Sorunu yaz...", en: "Type your question..." },
+  ai_send: { tr: "Gönder", en: "Send" },
+  ai_thinking: { tr: "Asistan düşünüyor...", en: "Assistant is thinking..." },
+  ai_failed: { tr: "AI yanıt veremedi", en: "AI could not respond" },
+  ai_disclaimer: {
+    tr: "Yanıtlar yapay zeka tarafından üretilir; resmi bilgi için AFAD'ı esas alın.",
+    en: "Responses are AI-generated; rely on AFAD for official guidance."
+  }
 };
 
 export function t(key) {
