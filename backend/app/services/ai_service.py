@@ -39,7 +39,14 @@ def _generate(prompt: str, *, json_mode: bool = False) -> str:
             "AI servisi yapılandırılmamış (GEMINI_API_KEY eksik)."
         )
 
-    generation_config: dict = {"temperature": 0.6, "maxOutputTokens": 1024}
+    generation_config: dict = {
+        "temperature": 0.6,
+        "maxOutputTokens": 4096,
+        # Gemini 2.5 is a "thinking" model: without this it spends most of
+        # the output budget on internal reasoning and the visible answer
+        # gets truncated mid-sentence.
+        "thinkingConfig": {"thinkingBudget": 0},
+    }
     if json_mode:
         generation_config["responseMimeType"] = "application/json"
 
@@ -101,7 +108,16 @@ def generate_insights(context: dict) -> dict:
     )
     text = _generate(prompt, json_mode=True)
     try:
-        parsed = json.loads(text)
+        cleaned = text.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.strip("`")
+            if cleaned.startswith("json"):
+                cleaned = cleaned[4:]
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start != -1 and end > start:
+            cleaned = cleaned[start : end + 1]
+        parsed = json.loads(cleaned)
         if not isinstance(parsed.get("plan"), list):
             raise ValueError("plan missing")
         return {
